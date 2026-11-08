@@ -24,8 +24,8 @@ out/
 # 自带运行时（体积大，按需自行放置）
 runtime/*.exe
 
-# 截图含真实工作内容，默认不随仓库分发（README 只引用 docs/ 下的脱敏图）
-shots/*.png
+# 截图与示例（含真实工作内容，整个目录不随仓库分发；README 只引用 docs/ 下的脱敏图）
+shots/
 
 # 系统文件
 .DS_Store
