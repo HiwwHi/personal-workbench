@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>个人工作台</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%234A6F8A'/><rect x='8' y='10' width='16' height='2' rx='1' fill='%23fff'/><rect x='8' y='15' width='16' height='2' rx='1' fill='%23C4D6E2'/><rect x='8' y='20' width='10' height='2' rx='1' fill='%23fff'/></svg>">
+<link rel="stylesheet" href="assets/css/main.css">
+</head>
+<body>
+
+<div class="app">
+
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark"></div>
+      <div class="brand-text">个人工作台</div>
+    </div>
+
+    <nav class="nav" id="nav">
+      <a class="nav-item" href="#/home" data-key="home">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z"/></svg></span>
+        <span>首页</span>
+      </a>
+      <a class="nav-item sensitive" href="#/vault" data-key="vault">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span>
+        <span>账号密码</span>
+      </a>
+      <a class="nav-item" href="#/tasks" data-key="tasks">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 6h14M5 12h14M5 18h9"/><path d="m15 18 2 2 3-4"/></svg></span>
+        <span>任务管理</span>
+      </a>
+      <a class="nav-item" href="#/study" data-key="study">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M3 6.5 12 4l9 2.5-9 2.5z"/><path d="M7 10v5c0 1.4 2.2 2.5 5 2.5s5-1.1 5-2.5v-5"/></svg></span>
+        <span>学习计划</span>
+      </a>
+      <a class="nav-item" href="#/skills" data-key="skills">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="m13 3-8 9h5l-1 9 8-9h-5z"/></svg></span>
+        <span>工作 Skill</span>
+      </a>
+      <a class="nav-item" href="#/notes" data-key="notes">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M6 3h9l3 3v15H6z"/><path d="M15 3v3h3M9 12h6M9 16h6"/></svg></span>
+        <span>学习笔记</span>
+      </a>
+      <a class="nav-item sensitive" href="#/jots" data-key="jots">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 4h14v11l-4 5H5z"/><path d="M8 9h8M8 13h5"/></svg></span>
+        <span>随手记</span>
+      </a>
+      <a class="nav-item sensitive" href="#/health" data-key="health">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-9a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 4.6-7 9-7 9z"/></svg></span>
+        <span>健康管理</span>
+      </a>
+      <a class="nav-item" href="#/system" data-key="system">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 3v2.4M12 18.6V21M3 12h2.4M18.6 12H21M5.6 5.6l1.7 1.7M16.7 16.7l1.7 1.7M18.4 5.6l-1.7 1.7M7.3 16.7l-1.7 1.7"/></svg></span>
+        <span>系统设置</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-foot">
+      <button class="btn-ghost wide" id="backupBtn">
+        <svg viewBox="0 0 24 24" class="mini"><path d="M12 4v10m0 0 4-4m-4 4-4-4M5 18h14"/></svg>
+        备份与导出
+      </button>
+      <div class="safe-badge" title="工作台不会自动写入磁盘文件，所有写操作都需你手动确认">本地运行 · 数据不联网</div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div class="topbar-left">
+        <h1 id="pageTitle">首页</h1>
+        <span id="pageSub" class="page-sub"></span>
+      </div>
+      <div class="topbar-right">
+        <button class="search-trigger" id="searchTrigger">
+          <svg viewBox="0 0 24 24" class="mini"><circle cx="11" cy="11" r="6"/><path d="m16 16 4 4"/></svg>
+          <span>搜索</span>
+          <kbd>Ctrl K</kbd>
+        </button>
+      </div>
+    </header>
+    <div class="view" id="view"></div>
+  </main>
+
+</div>
+
+<div id="toastWrap" class="toast-wrap"></div>
+<div id="nudgeWrap" class="nudge-wrap"></div>
+<div id="modalWrap"></div>
+
+<div class="palette" id="palette" hidden>
+  <div class="palette-mask" id="paletteMask"></div>
+  <div class="palette-box">
+    <input type="text" id="paletteInput" placeholder="搜索笔记、任务、密码、Skill…" autocomplete="off">
+    <div class="palette-list" id="paletteList"></div>
+  </div>
+</div>
+
+<script type="module" src="assets/js/app.js"></script>
+</body>
+</html>

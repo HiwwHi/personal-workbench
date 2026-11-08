@@ -1,0 +1,14 @@
+# 统一换行符，避免别人 clone 后 PowerShell / VBS 读中文乱码
+* text=auto eol=lf
+
+# Windows 脚本必须 CRLF
+*.ps1 text eol=crlf
+*.vbs text eol=crlf
+*.bat text eol=crlf
+
+# 二进制文件不做换行符转换
+*.png binary
+*.jpg binary
+*.ico binary
+*.exe binary
+*.woff2 binary

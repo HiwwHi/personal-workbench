@@ -1,0 +1,54 @@
+{
+  "name": "personal-workbench",
+  "version": "1.0.0",
+  "description": "完全本地运行的个人工作台：任务、账号密码、学习计划、笔记、随手记、健康提醒",
+  "author": "personal-workbench contributors",
+  "license": "MIT",
+  "main": "electron/main.js",
+  "scripts": {
+    "start": "electron .",
+    "server": "node server.js",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder --win"
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.personalworkbench.app",
+    "productName": "Personal Workbench",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "index.html",
+      "server.js",
+      "app.ico",
+      "assets/**/*",
+      "electron/**/*",
+      "!**/*.md",
+      "!shots/**/*",
+      "!runtime/**/*"
+    ],
+    "win": {
+      "icon": "app.ico",
+      "target": [
+        { "target": "nsis", "arch": ["x64"] },
+        { "target": "portable", "arch": ["x64"] }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "个人工作台",
+      "artifactName": "PersonalWorkbench-Setup-${version}.${ext}"
+    },
+    "portable": {
+      "artifactName": "PersonalWorkbench-${version}-portable.${ext}"
+    }
+  }
+}
