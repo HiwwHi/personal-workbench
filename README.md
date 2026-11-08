@@ -83,7 +83,7 @@
 需要 Node.js 18 以上：
 
 ```bash
-git clone https://github.com/<your-name>/personal-workbench.git
+git clone https://github.com/HiwwHi/personal-workbench.git
 cd personal-workbench
 npm install
 npm start        # 桌面版（Electron，带托盘）
