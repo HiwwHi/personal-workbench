@@ -5,13 +5,25 @@ import { today, dateAdd } from './ui.js';
 
 /* ------------------------------------------------------------------ 客户端封装 */
 
+/* 本机令牌：服务端启动时随机生成并写进页面 meta，本机其它程序拿不到 */
+function token() {
+  const m = document.querySelector('meta[name="wb-token"]');
+  return m ? m.getAttribute('content') : '';
+}
+
 async function post(url, body) {
-  const r = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body || {})
-  });
-  const j = await r.json();
+  let r;
+  try {
+    r = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-WB-Token': token() },
+      body: JSON.stringify(body || {})
+    });
+  } catch {
+    throw new Error('连不上本机服务（127.0.0.1），确认工作台服务还在运行');
+  }
+  let j;
+  try { j = await r.json(); } catch { throw new Error('本机服务返回了异常响应（HTTP ' + r.status + '）'); }
   if (!r.ok || j.error) {
     const err = new Error(j.error || ('HTTP ' + r.status));
     err.status = r.status;
@@ -25,6 +37,10 @@ async function post(url, body) {
 export async function addRoot(p, { mkdir = false } = {}) {
   if (!p) throw new Error('缺少目录');
   const r = await post('/api/roots', { add: [p], mkdir });
+  // 服务端拒绝的目录会放在 rejected 里（整块磁盘、系统目录、不存在的路径）
+  if ((r.rejected || []).length) {
+    throw new Error('目录不可登记：必须是已存在的文件夹，且不能是系统目录或整块磁盘');
+  }
   return r.roots || [];
 }
 
@@ -33,7 +49,7 @@ export async function registerRoots() {
   try { dirs.push(await fsa.currentDir('work')); } catch {}
   try { dirs.push(await fsa.currentDir('know')); } catch {}
   try { dirs.push(await fsa.runtimePath()); } catch {}
-  // 只有用户手填过绝对路径的目录才能登记给服务端，否则服务端拿不到真实路径
+  // 只登记拿到绝对路径的目录：服务端要靠它校验越界
   const roots = dirs.filter(Boolean).map(d => d.root).filter(Boolean);
   if (!roots.length) return [];
   // 不吞异常：登记失败要让调用方 toast 出来
@@ -161,6 +177,6 @@ export async function openSnapshot() {
   await saveSnapshot();
   const dir = await fsa.runtimePath();
   if (!dir) throw new Error('中间文件目录未设置');
-  if (!dir.root) throw new Error('请先在系统设置里填写中间文件目录的绝对路径');
-  return openInEditor({ app: 'cursor', target: dir.root + '\\给AI看' });
+  const root = await fsa.ensureAbsPath('runtime');
+  return openInEditor({ app: 'cursor', target: root + '\\给AI看' });
 }

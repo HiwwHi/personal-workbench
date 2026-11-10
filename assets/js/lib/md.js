@@ -1,11 +1,26 @@
 import { esc } from './ui.js';
 
+/* 链接只放行 http/https/mailto 和相对路径：javascript:、data:、file: 一律不认 */
+const SCHEME_RE = /^[a-z][a-z0-9+.-]*:/i;
+function safeUrl(u) {
+  const s = String(u || '').trim();
+  if (/^(https?:|mailto:)/i.test(s)) return s;
+  if (SCHEME_RE.test(s)) return '';
+  return s;                       // 相对路径、#锚点
+}
+
 function inline(s) {
   const stash = [];
   const put = html => { stash.push(html); return '@S' + (stash.length - 1) + 'S@'; };
   s = s.replace(/`([^`]+)`/g, (m, c) => put('<code>' + c + '</code>'));
-  s = s.replace(/!\[([^\]]*)\]\(([^)\s]+)\)/g, (m, a, u) => put('<img src="' + u + '" alt="' + a + '">'));
-  s = s.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (m, a, u) => put('<a href="' + u + '" target="_blank" rel="noreferrer">' + a + '</a>'));
+  s = s.replace(/!\[([^\]]*)\]\(([^)\s]+)\)/g, (m, a, u) => {
+    const src = safeUrl(u);
+    return src ? put('<img src="' + src + '" alt="' + a + '">') : m;
+  });
+  s = s.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (m, a, u) => {
+    const href = safeUrl(u);
+    return href ? put('<a href="' + href + '" target="_blank" rel="noreferrer noopener">' + a + '</a>') : a;
+  });
   s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
   s = s.replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<em>$2</em>');
   s = s.replace(/__([^_]+)__/g, '<strong>$1</strong>');

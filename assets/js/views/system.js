@@ -72,7 +72,12 @@ export function applyTheme(id) {
   return tid;
 }
 
-const slug = s => String(s).replace(/[\\/:*?"<>|\r\n]+/g, '_').trim().slice(0, 60) || 'skill';
+/* 目录名净化：和 notes.js 的同名逻辑保持一致，防 .. 与设备名 */
+const slug = s => String(s)
+  .replace(/[\\/:*?"<>|\x00-\x1f]+/g, '_')
+  .replace(/\.{2,}/g, '.')
+  .replace(/^[. ]+|[. ]+$/g, '')
+  .slice(0, 60) || 'skill';
 
 /* ------------------------------------------------------------------ 文档生成 */
 
@@ -258,6 +263,17 @@ export async function mount(root) {
   const workName = (await fsa.currentDir('work'))?.name || null;
   const knowName = (await fsa.currentDir('know'))?.name || null;
 
+  /* 桌面版能弹原生选择框，浏览器版只能手填 */
+  const desk = fsa.canAskPath();
+  const PH = { work: '例：D:\\notes\\work', know: '例：D:\\notes\\know', runtime: '例：D:\\workbench-data' };
+  const pathField = (slot, label) => `
+    <label class="field"><span>${label}</span>
+      <div class="row">
+        <input class="grow" type="text" data-dirpath="${slot}" placeholder="${PH[slot]}" value="${esc(((st.dirPaths || {})[slot]) || '')}">
+        ${desk ? `<button class="btn sm" data-dirask="${slot}" title="在弹出的窗口里选这个文件夹的位置">选择</button>` : ''}
+      </div>
+    </label>`;
+
   const srcCard = (slot, label, desc, name) => `
     <div class="src-card">
       <div class="row-between">
@@ -373,19 +389,18 @@ export async function mount(root) {
         </div>
 
         <div class="mb12">
-          <div class="card-title mb8">目录绝对路径（浏览器拿不到，需要手动填写）</div>
+          <div class="card-title mb8">目录绝对路径${desk ? '（桌面版点「选择」自动填）' : '（浏览器版需要手动填写）'}</div>
           <div class="grid grid-3">
-            <label class="field"><span>工作笔记目录</span>
-              <input type="text" data-dirpath="work" placeholder="例：D:\notes\work" value="${esc(((st.dirPaths || {}).work) || '')}"></label>
-            <label class="field"><span>知识笔记目录</span>
-              <input type="text" data-dirpath="know" placeholder="例：D:\notes\know" value="${esc(((st.dirPaths || {}).know) || '')}"></label>
-            <label class="field"><span>中间文件目录</span>
-              <input type="text" data-dirpath="runtime" placeholder="例：D:\workbench-data" value="${esc(((st.dirPaths || {}).runtime) || '')}"></label>
+            ${pathField('work', '工作笔记目录')}
+            ${pathField('know', '知识笔记目录')}
+            ${pathField('runtime', '中间文件目录')}
           </div>
           <div class="hint mt6">
-            浏览器的 File System Access API 出于安全只给文件夹名字、不给真实路径，
-            所以「用 Cursor 打开 / 在资源管理器显示 / 生成快照」这些功能需要你在这里补一次绝对路径。
-            只保存在本机浏览器，不会上传。
+            浏览器只肯告诉网页文件夹的名字，不肯给真实路径，所以「用 Cursor 打开 / 在资源管理器显示 / 生成快照」要知道目录实际在哪。
+            ${desk
+              ? '桌面版连接文件夹后会自动弹出窗口让你确认位置，也可以在这里点「选择」补上或改掉。'
+              : '浏览器版请把绝对路径粘进上面的输入框（例如 <code>D:\\notes\\work</code>）。'}
+            只存在本机，不会上传。
           </div>
         </div>
 
@@ -473,7 +488,7 @@ export async function mount(root) {
         <div class="kv"><span class="k">笔记源</span><span class="v">工作：${esc(workName || '未连接')} ｜ 知识：${esc(knowName || '未连接')}</span></div>
         <div class="kv"><span class="k">中间文件</span><span class="v">${esc(rtName || '未设置')}</span></div>
         <div class="kv"><span class="k">当前主题</span><span class="v">${(THEMES.find(t => t.id === st.theme) || THEMES[0]).name}</span></div>
-        <div class="kv"><span class="k">浏览器</span><span class="v">${navigator.userAgent.slice(0, 90)}</span></div>
+        <div class="kv"><span class="k">浏览器</span><span class="v">${esc(navigator.userAgent.slice(0, 90))}</span></div>
       </div>
 
       <div class="card">
@@ -531,15 +546,26 @@ function wire(root) {
 
   const on = (id, fn) => { const el = root.querySelector(id); if (el) el.addEventListener("click", fn); };
 
-  /* 目录绝对路径：浏览器拿不到真实路径，用户手填后保存 */
+  /* 目录绝对路径：可手填，桌面版还能点「选择」用原生窗口拿 */
   root.querySelectorAll('[data-dirpath]').forEach(el => el.addEventListener('change', () => {
-    const slot = el.dataset.dirpath;
-    const v = el.value.trim();
-    store.update(d2 => {
-      d2.settings.dirPaths = d2.settings.dirPaths || {};
-      d2.settings.dirPaths[slot] = v;
-    });
+    fsa.setAbsPath(el.dataset.dirpath, el.value.trim());
     toast('路径已保存', 'ok');
+  }));
+
+  root.querySelectorAll('[data-dirask]').forEach(el => el.addEventListener('click', async () => {
+    const slot = el.dataset.dirask;
+    try {
+      const p = await fsa.askAbsPath(slot);
+      if (!p) return;
+      const name = slot === 'runtime' ? await fsa.runtimeName() : (await fsa.currentDir(slot))?.name;
+      const tail = p.replace(/[\\/]+$/, '').split(/[\\/]/).pop();
+      if (name && tail.toLowerCase() !== name.toLowerCase()) {
+        toast(`路径最后一级是「${tail}」，已连接的文件夹叫「${name}」，对不上会有问题`, 'warn', 4000);
+      } else {
+        toast('路径已保存', 'ok');
+      }
+      mount(root);
+    } catch (e) { toast(e.message || '选择失败', 'warn'); }
   }));
 
   const bind = (id, key) => {
@@ -573,6 +599,7 @@ function wire(root) {
     const slot = el.dataset.srcclr;
     if (!(await confirmBox('断开笔记文件夹', '只是解除连接，磁盘上的文件不会动。确定吗？'))) return;
     await fsa.clearDir(slot);
+    fsa.setAbsPath(slot, '');           // 路径跟着句柄一起清，免得上错目录
     store.update(() => { store.notesSlotUI(slot).source = ''; });
     toast('已断开'); mount(root);
   }));
@@ -602,9 +629,9 @@ function wire(root) {
       else if (slot === 'know') dir = await fsa.currentDir('know');
       else if (slot === 'runtime') dir = await fsa.runtimePath();
       if (!dir) { toast('该目录未连接', 'warn'); return; }
-      if (!dir.root) { toast('请先在上方填写该目录的绝对路径', 'warn'); return; }
+      const target = await fsa.ensureAbsPath(slot);       // 桌面版没填过会顺手弹一次选择框
       await ai.registerRoots();
-      await ai.openInEditor({ app, target: dir.root });
+      await ai.openInEditor({ app, target });
       toast('已交给 ' + app + ' 打开', 'ok');
     } catch (e) { toast(e.message || '打开失败', 'warn'); }
   };
@@ -620,9 +647,9 @@ function wire(root) {
     try {
       const dir = await fsa.runtimePath();
       if (!dir) return;
-      if (!dir.root) { toast('请先填写中间文件目录的绝对路径', 'warn'); return; }
+      const target = await fsa.ensureAbsPath('runtime');
       await ai.registerRoots();
-      await ai.revealInExplorer(dir.root);
+      await ai.revealInExplorer(target);
       toast('已在资源管理器打开', 'ok');
     } catch (e) { toast(e.message, 'warn'); }
   });
@@ -630,12 +657,12 @@ function wire(root) {
   const snap = root.querySelector('#btnSnapshot');
   if (snap) snap.addEventListener('click', async () => {
     try {
-      await ai.registerRoots();
-      await ai.saveSnapshot();
       const dir = await fsa.runtimePath();
       if (!dir) throw new Error('未设置中间文件目录');
-      if (!dir.root) throw new Error('请先填写中间文件目录的绝对路径');
-      await ai.openInEditor({ app: 'cursor', target: dir.root + '\\给AI看' });
+      const target = await fsa.ensureAbsPath('runtime');
+      await ai.registerRoots();
+      await ai.saveSnapshot();
+      await ai.openInEditor({ app: 'cursor', target: target + '\\给AI看' });
       toast('快照已生成并交给 Cursor', 'ok');
     } catch (e) { toast(e.message, 'warn'); }
   });
@@ -650,13 +677,13 @@ function wire(root) {
   const snapPath = root.querySelector('#btnSnapshotPath');
   if (snapPath) snapPath.addEventListener('click', async () => {
     try {
-      await ai.saveSnapshot();
       const dir = await fsa.runtimePath();
       if (!dir) return;
-      if (!dir.root) { toast('请先填写中间文件目录的绝对路径', 'warn'); return; }
+      const target = await fsa.ensureAbsPath('runtime');
+      await ai.saveSnapshot();
       await ai.registerRoots();
       try {
-        await ai.revealInExplorer(dir.root + '\\给AI看');
+        await ai.revealInExplorer(target + '\\给AI看');
         toast('已在资源管理器打开', 'ok');
       } catch (e) {
         toast(/不存在/.test(e.message) ? '还没生成过快照，先点「生成并交给 Cursor」' : e.message, 'warn');

@@ -79,11 +79,13 @@ function backupModal() {
 async function buildIndex() {
   const items = [];
   const d = store.load();
-  d.vault.forEach(v => items.push({ kind: '密码', title: v.title, path: (v.group || '未分组') + ' · ' + (v.account || ''), go: '#/vault' }));
-  d.projects.forEach(p => (p.tasks || []).forEach(t => items.push({ kind: '任务', title: t.title, path: p.name + (t.due ? ' · ' + t.due : ''), go: '#/tasks' })));
+  // 隐私模式下敏感页进不去，索引里也不能出现它们的标题
+  const hide = !!store.settings().privacy;
+  if (!hide) d.vault.forEach(v => items.push({ kind: '密码', title: v.title, path: (v.group || '未分组') + ' · ' + (v.account || ''), go: '#/vault' }));
+  d.projects.forEach(p => (p.tasks || []).forEach(t => items.push({ kind: '任务', title: t.title, path: (p.name || '') + (t.due ? ' · ' + t.due : ''), go: '#/tasks' })));
   d.study.forEach(s => items.push({ kind: '学习', title: s.name, path: s.deadline || '', go: '#/study' }));
   d.skills.forEach(s => items.push({ kind: 'Skill', title: s.name, path: s.description || '', go: '#/skills' }));
-  d.jots.forEach(j => items.push({ kind: '随手记', title: j.text.slice(0, 40), path: j.tags.join(' ') || '', go: '#/jots' }));
+  if (!hide) d.jots.forEach(j => items.push({ kind: '随手记', title: String(j.text || '').slice(0, 40), path: (j.tags || []).join(' '), go: '#/jots' }));
   const seenMem = new Set();
   for (const slot of ['work', 'know']) {
     const label = slot === 'work' ? '流程笔记' : '知识笔记';
@@ -114,7 +116,8 @@ function openPalette() {
   buildIndex().then(items => { index = items; paint(''); });
 
   function paint(q) {
-    const res = index.filter(i => (i.title + i.path + i.kind).toLowerCase().includes(q.toLowerCase())).slice(0, 40);
+    const hay = q.toLowerCase();
+    const res = index.filter(i => [i.kind, i.title, i.path].join(' ').toLowerCase().includes(hay)).slice(0, 40);
     if (!res.length) { list.innerHTML = '<div class="empty">没有匹配项</div>'; return; }
     cur = 0;
     list.innerHTML = res.map((i, n) => `<div class="palette-row ${n === 0 ? 'sel' : ''}" data-n="${n}" data-go="${i.go}" data-slot="${i.slot || ''}">
@@ -161,6 +164,14 @@ function boot() {
 
   window.addEventListener('hashchange', route);
   window.addEventListener('wb:refresh', () => { if (currentKey === 'health' || currentKey === 'home') route(); });
+
+  // 本地存储写满时只提醒一次，别刷屏
+  let storageWarned = false;
+  window.addEventListener('wb:storage-error', () => {
+    if (storageWarned) return;
+    storageWarned = true;
+    toast('本地存储写满了，最近的改动可能没存上。先去「备份与导出」导一份，再清掉不用的旧数据。', 'warn', 6000);
+  });
   $('#searchTrigger').addEventListener('click', openPalette);
   $('#backupBtn').addEventListener('click', backupModal);
   document.addEventListener('keydown', e => {

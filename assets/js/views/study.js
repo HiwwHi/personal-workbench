@@ -12,7 +12,7 @@ function form(s) {
     <label class="field"><span>学习主题</span><input type="text" data-f="name" value="${esc(s.name || '')}" placeholder="例：拿下 CCIE 笔试"></label>
     <div class="grid grid-2">
       <label class="field"><span>目标完成日</span><input type="date" data-f="deadline" value="${esc(s.deadline || '')}"></label>
-      <label class="field"><span>每日目标时长（分钟）</span><input type="number" data-f="goalMin" value="${s.goalMin || 30}"></label>
+      <label class="field"><span>每日目标时长（分钟）</span><input type="number" data-f="goalMin" value="${esc(s.goalMin || 30)}"></label>
     </div>
     <label class="field"><span>阶段拆分（每行一个，从上到下递进）</span>
       <textarea rows="5" data-f="stages" placeholder="刷完教材前三章&#10;做完实验手册&#10;两套模拟题">${esc(stages)}</textarea></label>
@@ -70,7 +70,7 @@ function checkin(s, done) {
   modal({
     title: '今日打卡 · ' + s.name, okText: '打卡',
     done,
-    body: `<label class="field"><span>今天投入（分钟）</span><input type="number" data-f="minutes" value="${cur.minutes}"></label>
+    body: `<label class="field"><span>今天投入（分钟）</span><input type="number" data-f="minutes" value="${esc(cur.minutes)}"></label>
            <label class="field"><span>学到哪了 / 心得（选填）</span><textarea rows="3" data-f="note">${esc(cur.note)}</textarea></label>`,
     onOk(body) {
       const minutes = Number(body.querySelector('[data-f="minutes"]').value) || 0;
@@ -154,8 +154,8 @@ export function mount(root) {
     const sid = c.closest('.card').dataset.sid;
     store.update(d => {
       const s = d.study.find(x => x.id === sid);
-      const st = (s.stages || []).find(x => x.id === c.dataset.stage);
-      st.done = !st.done;
+      const st = s && (s.stages || []).find(x => x.id === c.dataset.stage);
+      if (st) st.done = !st.done;
     });
     mount(root);
   }));

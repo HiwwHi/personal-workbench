@@ -157,14 +157,19 @@ export function mount(root) {
 
   root.querySelector('#sknew').addEventListener('click', () => edit(null, () => mount(root)));
   root.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', () => edit(b.dataset.edit, () => mount(root))));
-  root.querySelectorAll('[data-run]').forEach(b => b.addEventListener('click', () => runModal(store.load().skills.find(x => x.id === b.dataset.run), () => mount(root))));
+  root.querySelectorAll('[data-run]').forEach(b => b.addEventListener('click', () => {
+    const s = store.load().skills.find(x => x.id === b.dataset.run);
+    if (s) runModal(s, () => mount(root));       // 可能已被另一个标签页删掉
+  }));
   root.querySelectorAll('[data-export]').forEach(b => b.addEventListener('click', () => {
     const s = store.load().skills.find(x => x.id === b.dataset.export);
+    if (!s) { toast('这条 Skill 已不存在', 'warn'); return; }
     download(s.name.replace(/[\\/:*?"<>|]/g, '_') + '.SKILL.md', toSkillMd(s));
     toast('已导出', 'ok');
   }));
   root.querySelectorAll('[data-copy]').forEach(b => b.addEventListener('click', async () => {
     const s = store.load().skills.find(x => x.id === b.dataset.copy);
+    if (!s) { toast('这条 Skill 已不存在', 'warn'); return; }
     const ok = await copyText(PREFACE + toSkillMd(s) + '\n（参数还没填，我会把本次的具体参数一起发给你）');
     toast(ok ? '已复制，粘到对话里即可' : '复制失败', ok ? 'ok' : 'warn');
   }));
@@ -180,8 +185,8 @@ export function mount(root) {
     const id = c.closest('.skill-card').dataset.sk;
     store.update(d => {
       const s = d.skills.find(x => x.id === id);
-      const st = s.steps.find(x => x.id === c.dataset.step);
-      st.done = !st.done;
+      const st = s && (s.steps || []).find(x => x.id === c.dataset.step);
+      if (st) st.done = !st.done;
     });
     mount(root);
   }));

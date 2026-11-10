@@ -44,8 +44,9 @@ function editEntry(id, done) {
       if (!g('title')) { toast('标题不能为空', 'warn'); return false; }
       const data = { title: g('title'), group: g('group') || '未分组', account: g('account'), password: g('password'), url: g('url'), note: g('note') };
       store.update(d => {
-        if (v) Object.assign(d.vault.find(x => x.id === id), data, { updatedAt: today() });
-        else d.vault.unshift(Object.assign({ id: uid(), createdAt: today(), pwdChangedAt: today() }, data));
+        const target = v ? d.vault.find(x => x.id === id) : null;
+        if (target) Object.assign(target, data, { updatedAt: today() });
+        else if (!v) d.vault.unshift(Object.assign({ id: uid(), createdAt: today(), pwdChangedAt: today() }, data));
       });
       toast(v ? '已更新' : '已添加', 'ok');
       return true;

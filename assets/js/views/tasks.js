@@ -89,7 +89,9 @@ function taskForm(projectId, t) {
 
 function editTask(projectId, taskId, defaultDue, done) {
   const p = store.load().projects.find(x => x.id === projectId);
+  if (!p) { toast('项目已不存在，刷新一下再试', 'warn'); return; }
   const t = taskId ? (p.tasks || []).find(x => x.id === taskId) : { due: defaultDue || '' };
+  if (!t) { toast('任务已不存在，刷新一下再试', 'warn'); return; }
   modal({
     title: taskId ? '编辑任务' : '新增任务 · ' + p.name,
     body: taskForm(projectId, t),
@@ -101,8 +103,9 @@ function editTask(projectId, taskId, defaultDue, done) {
       store.update(d => {
         const prj = d.projects.find(x => x.id === projectId);
         prj.tasks = prj.tasks || [];
-        if (taskId) {
-          Object.assign(prj.tasks.find(x => x.id === taskId), {
+        const target = taskId ? prj.tasks.find(x => x.id === taskId) : null;
+        if (target) {
+          Object.assign(target, {
             title: g('title'), moduleId: g('moduleId'), due: g('due'), repeat: g('repeat'), priority: g('priority')
           });
         } else {
@@ -199,7 +202,7 @@ export function mount(root) {
     up.forEach(x => { (byDate[x.task.due] = byDate[x.task.due] || []).push(x); });
     body = Object.keys(byDate).length ? Object.keys(byDate).sort().map(d => `
       <div class="card">
-        <div class="card-head"><div class="card-title">${d} · ${esc(relDate(d))}</div><span class="hint">${byDate[d].length} 项</span></div>
+        <div class="card-head"><div class="card-title">${esc(d)} · ${esc(relDate(d))}</div><span class="hint">${byDate[d].length} 项</span></div>
         ${byDate[d].map(x => taskRow(x)).join('')}
       </div>`).join('') : '<div class="card"><div class="empty">未来 7 天没有排期任务</div></div>';
   } else {
@@ -294,7 +297,7 @@ export function mount(root) {
     if (await confirmBox('删除任务', '确定删除这条任务？')) {
       store.update(d => {
         const prj = d.projects.find(x => x.id === p);
-        prj.tasks = prj.tasks.filter(x => x.id !== t2);
+        if (prj) prj.tasks = (prj.tasks || []).filter(x => x.id !== t2);
       });
       toast('已删除'); mount(root);
     }

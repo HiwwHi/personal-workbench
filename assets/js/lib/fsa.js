@@ -1,4 +1,5 @@
 import * as store from './store.js';
+import { toast } from './ui.js';
 
 const DB_NAME = 'wb-notes-fs';
 const STORE = 'handles';
@@ -7,6 +8,7 @@ const STORE = 'handles';
 export const SLOTS = ['work', 'know'];
 export const SLOT_LABEL = { work: '工作流程笔记', know: '知识笔记' };
 const KEY = { work: 'dir:work', know: 'dir:know', runtime: 'dir:runtime' };
+const SLOT_NAME = { work: '工作笔记', know: '知识笔记', runtime: '中间文件' };
 
 export const supported = () => typeof window.showDirectoryPicker === 'function';
 
@@ -55,6 +57,7 @@ export async function pickDir(slot = 'work') {
   const h = await window.showDirectoryPicker({ id: 'wb-' + slot, mode: 'readwrite' });
   handles[slot] = h;
   await idbSet(KEY[slot], h);
+  await syncAbsPath(slot, h.name);
   return h.name;
 }
 
@@ -76,11 +79,60 @@ export async function restoreDir(slot = 'work', { silent = true } = {}) {
   } catch (e) { return null; }
 }
 
-/* 目录绝对路径：File System Access API 拿不到路径，只能由用户在系统设置里手动填写 */
+/* 目录绝对路径：浏览器拿不到，桌面版由主进程的原生选择框提供，浏览器版仍需手填 */
 export function absPath(slot = 'work') {
   const paths = store.settings().dirPaths || {};
   const p = paths[slot];
   return typeof p === 'string' ? p.trim() : '';
+}
+
+export function setAbsPath(slot = 'work', p = '') {
+  store.update(d => {
+    d.settings.dirPaths = d.settings.dirPaths || {};
+    d.settings.dirPaths[slot] = String(p || '').trim();
+  });
+}
+
+/* 桌面版才有原生选择框 */
+export const canAskPath = () => !!(window.workbenchDesktop && typeof window.workbenchDesktop.pickDir === 'function');
+
+export async function askAbsPath(slot = 'work') {
+  if (!canAskPath()) return '';
+  let p;
+  // 主进程没起来/通道没注册时退回手填，不要让英文 IPC 报错糊到界面上
+  try { p = await window.workbenchDesktop.pickDir(absPath(slot)); } catch { return ''; }
+  if (!p) return '';
+  setAbsPath(slot, p);
+  return p;
+}
+
+/* 取绝对路径：没填过且是桌面版就顺手问一次，省得用户先去设置页补 */
+export async function ensureAbsPath(slot = 'work') {
+  const cur = absPath(slot);
+  if (cur) return cur;
+  const label = SLOT_NAME[slot] || '该目录';
+  const p = canAskPath() ? await askAbsPath(slot) : '';
+  if (p) return p;
+  throw new Error(`没能拿到${label}的绝对路径，请到「系统设置 → AI 联动」里填写或点「选择」`);
+}
+
+const baseName = p => String(p || '').replace(/[\\/]+$/, '').split(/[\\/]/).pop();
+
+/* 已存路径和当前文件夹名对不上时问一次；对得上就不打扰 */
+async function syncAbsPath(slot, name) {
+  if (!canAskPath()) return;
+  const want = String(name || '').toLowerCase();
+  const cur = absPath(slot);
+  if (cur && baseName(cur).toLowerCase() === want) return;
+  let p;
+  try { p = await askAbsPath(slot); } catch { return; }
+  if (!p) return;                                   // 取消：保留原值
+  if (baseName(p).toLowerCase() === want) {
+    toast(SLOT_NAME[slot] + '目录路径已记录', 'ok');
+  } else {
+    setAbsPath(slot, '');
+    toast(`选的路径（${baseName(p)}）和文件夹名（${name}）不一致，请到系统设置里手动填`, 'warn', 4000);
+  }
 }
 
 export async function currentDir(slot = 'work') {

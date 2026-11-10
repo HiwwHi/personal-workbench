@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Tray, Menu, nativeImage, shell, dialog } = require('electron');
+const { app, BrowserWindow, Tray, Menu, nativeImage, shell, dialog, ipcMain } = require('electron');
 const path = require('path');
 const { startServer } = require('../server.js');
 
@@ -35,6 +35,18 @@ async function isOurServer(port) {
   } catch { return false; }
   finally { clearTimeout(timer); }
 }
+
+/** 原生选目录：给页面补上浏览器拿不到的绝对路径 */
+ipcMain.handle('wb:pick-dir', async (e, defaultPath) => {
+  if (!win || win.isDestroyed() || e.sender !== win.webContents) return null;
+  const r = await dialog.showOpenDialog(win, {
+    title: '选择这个文件夹的位置',
+    buttonLabel: '就是这个',
+    defaultPath: defaultPath || undefined,
+    properties: ['openDirectory', 'dontAddToRecent']
+  });
+  return r.canceled || !r.filePaths.length ? null : r.filePaths[0];
+});
 
 async function boot() {
   // 默认端口上已是本工作台（如托盘版先起了）→ 复用
@@ -77,6 +89,7 @@ function createWindow() {
     backgroundColor: '#FAF9F7',
     autoHideMenuBar: true,
     webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
       spellcheck: false

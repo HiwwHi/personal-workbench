@@ -20,7 +20,12 @@ let outlineOnly = false;
 
 const srcKey = () => (source ? source.key : '');
 
-const sanitize = s => String(s).replace(/[\\/:*?"<>|\n\r\t]/g, '_').slice(0, 60);
+/* 文件名只用安全字符：非法符号、路径分隔、连续点号都替换掉 */
+const sanitize = s => String(s)
+  .replace(/[\\/:*?"<>|\n\r\t]/g, '_')
+  .replace(/\.{2,}/g, '.')
+  .replace(/^[. ]+|[. ]+$/g, '')
+  .slice(0, 60) || 'note';
 
 const mem = {
   key: 'mem',
@@ -257,10 +262,12 @@ async function openInCursor() {
   try {
     const dir = await fsa.currentDir(slot);
     if (!dir) throw new Error('未连接笔记源目录');
-    if (!dir.root) throw new Error('请先在「系统设置 → AI 联动」里填写该笔记目录的绝对路径');
-    const abs = (dir.root + '\\' + current.path).replace(/\//g, '\\');
+    const root = await fsa.ensureAbsPath(slot);
+    const abs = (root + '\\' + current.path).replace(/\//g, '\\');
     await ai.registerRoots();
-    const line = focusSec && typeof focusSec.line === 'number' ? focusSec.line + 1 : undefined;
+    // focusSec 是章节标题，按标题找回行号，Cursor 才能跳到那一段
+    const sec = focusSec ? sections().find(s => s.title === focusSec) : null;
+    const line = sec ? sec.start + 1 : undefined;
     await ai.openInEditor({ app: 'cursor', target: abs, line });
     toast('已在 Cursor 中打开' + (line ? `（跳到第 ${line} 行）` : ''), 'ok');
   } catch (e) { toast(e.message, 'warn'); }
@@ -357,7 +364,7 @@ function toolbarHTML() {
     <button class="btn sm" id="btnOutline" title="显示/隐藏大纲">大纲</button>
     <button class="btn sm" id="btnExportAI">导出给 AI</button>
     <button class="btn sm" id="btnOutlineOnly">仅大纲</button>
-    <button class="btn sm" id="btnOpenCursor" title="用本机 Cursor 打开当前笔记${focusSec ? '并跳到「' + focusSec.title + '」那一行' : ''}">在 Cursor 中打开</button>
+    <button class="btn sm" id="btnOpenCursor" title="用本机 Cursor 打开当前笔记${focusSec ? '并跳到「' + esc(focusSec) + '」那一行' : ''}">在 Cursor 中打开</button>
     <button class="btn sm" id="btnMerge">AI 回填</button>
     <button class="btn sm ${dirty ? 'primary' : ''}" id="btnSave" ${dirty ? '' : 'disabled'}>保存到磁盘</button>
   `;

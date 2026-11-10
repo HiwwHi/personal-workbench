@@ -54,8 +54,15 @@ export function load() {
 }
 
 export function save() {
-  try { localStorage.setItem(KEY, JSON.stringify(load())); }
-  catch (e) { console.error(e); }
+  try {
+    localStorage.setItem(KEY, JSON.stringify(load()));
+    return true;
+  } catch (e) {
+    // 多半是本地存储写满：告诉界面一声，别让用户以为存上了
+    console.error(e);
+    try { window.dispatchEvent(new CustomEvent('wb:storage-error')); } catch {}
+    return false;
+  }
 }
 
 export function slice(name) { return load()[name]; }
@@ -88,10 +95,24 @@ export function exportAll() {
   return JSON.stringify({ __app: 'personal-workbench', version: 1, exportedAt: new Date().toISOString(), data: load() }, null, 2);
 }
 
+/* 只收认识的字段，类型不对就丢掉：坏备份不该把整个工作台搞崩 */
 export function importAll(json) {
   const obj = JSON.parse(json);
   const data = obj && obj.data ? obj.data : obj;
-  cache = deepMerge(DEFAULT, data);
+  if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error('不是工作台的备份文件');
+  const safe = {};
+  for (const k of Object.keys(DEFAULT)) {
+    if (!(k in data)) continue;
+    const v = data[k];
+    if (Array.isArray(DEFAULT[k])) {
+      if (Array.isArray(v)) safe[k] = v.filter(x => x && typeof x === 'object');
+    } else if (DEFAULT[k] && typeof DEFAULT[k] === 'object') {
+      if (v && typeof v === 'object' && !Array.isArray(v)) safe[k] = v;
+    } else {
+      safe[k] = v;
+    }
+  }
+  cache = deepMerge(DEFAULT, safe);
   save();
   return true;
 }

@@ -21,6 +21,9 @@ out/
 .vscode/
 .idea/
 
+# 对话/交接记录（含本机路径与聊天原文，只留本地）
+docs/CONVERSATION.md
+
 # 自带运行时（体积大，按需自行放置）
 runtime/*.exe
 

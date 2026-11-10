@@ -9,7 +9,7 @@ function ruleForm(r) {
   return `
     <label class="field"><span>提醒名称</span><input type="text" data-f="name" value="${esc(r.name || '')}" placeholder="例：喝水"></label>
     <div class="grid grid-2">
-      <label class="field"><span>间隔（分钟）</span><input type="number" data-f="interval" value="${r.interval || 30}"></label>
+      <label class="field"><span>间隔（分钟）</span><input type="number" data-f="interval" value="${esc(r.interval || 30)}"></label>
       <label class="field"><span>是否在用</span>
         <select data-f="enabled">
           <option value="1" ${r.enabled === false ? '' : 'selected'}>启用</option>

@@ -1,5 +1,5 @@
 import * as store from './store.js';
-import { today as todayStr, toast, toEl, $ } from './ui.js';
+import { today as todayStr, toast, toEl, esc, $ } from './ui.js';
 
 const IDLE_MS = 5 * 60 * 1000;
 const TICK_MS = 20000;
@@ -66,9 +66,9 @@ function fire(rule) {
   if (Date.now() < until) return;
   if (wrap.querySelector('[data-rule="' + rule.id + '"]')) return;
 
-  const el = toEl(`<div class="nudge" data-rule="${rule.id}">
-      <div class="nudge-title"><i class="nudge-dot"></i>${rule.name}提醒</div>
-      <div class="nudge-body">${rule.msg}</div>
+  const el = toEl(`<div class="nudge" data-rule="${esc(rule.id)}">
+      <div class="nudge-title"><i class="nudge-dot"></i>${esc(rule.name)}提醒</div>
+      <div class="nudge-body">${esc(rule.msg)}</div>
       <div class="nudge-progress"><i style="width:100%"></i></div>
       <div class="nudge-foot">
         <button class="btn sm" data-a="snooze">稍后 10 分钟</button>

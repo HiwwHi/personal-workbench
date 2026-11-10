@@ -45,16 +45,17 @@ export function confirmBox(title, msg, okText = '确定', danger = true) {
   });
 }
 
+/* title / 按钮文案一律当纯文本转义；body 由调用方负责（它本来就是 HTML） */
 export function modal({ title, body, okText = '确定', onOk, wide = false, cancelText = '取消', done }) {
   const mask = toEl(`<div class="modal-mask"><div class="modal ${wide ? 'wide' : ''}">
       <div class="modal-head">
-        <div class="modal-title">${title}</div>
+        <div class="modal-title">${esc(title)}</div>
         <button class="icon-btn" data-a="x"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
       </div>
       <div class="modal-body">${body}</div>
       <div class="modal-foot">
-        <button class="btn" data-a="no">${cancelText}</button>
-        <button class="btn primary" data-a="yes">${okText}</button>
+        <button class="btn" data-a="no">${esc(cancelText)}</button>
+        <button class="btn primary" data-a="yes">${esc(okText)}</button>
       </div></div></div>`);
   const bodyEl = $('.modal-body', mask);
   let closed = false;
@@ -88,9 +89,9 @@ export function ring(pct, size = 74, label = '', sub = '') {
         stroke-linecap="round" stroke-dasharray="${c.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}"
         transform="rotate(-90 ${size / 2} ${size / 2})"/>
       <text x="${size / 2}" y="${size / 2 + 1}" text-anchor="middle" dominant-baseline="central"
-        style="font-size:16px;font-weight:500;fill:var(--text);stroke:none">${label}</text>
+        style="font-size:16px;font-weight:500;fill:var(--text);stroke:none">${esc(label)}</text>
     </svg>
-    <div class="ring-label">${sub}</div>
+    <div class="ring-label">${esc(sub)}</div>
   </div>`;
 }
 
