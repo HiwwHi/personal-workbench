@@ -13,24 +13,27 @@ jobs:
   windows:
     runs-on: windows-latest
     steps:
-      - name: 取代码
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: 装 Node
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
 
-      - name: 装依赖
+      - name: Install dependencies
         run: npm ci
 
-      - name: 打包（安装版 + 免安装版）
+      # 打 tag 时 electron-builder 默认会自己去发 Release（需要 GH_TOKEN，会直接失败）。
+      # 这里用 --publish never 关掉它，发布统一交给下面的 Release 步骤。
+      - name: Build installers
         env:
-          CSC_IDENTITY_AUTO_DISCOVERY: 'false'   # 没有签名证书，跳过签名，避免报错
-        run: npm run dist
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'   # 没有签名证书，跳过签名
+        run: npm run dist -- --publish never
 
-      - name: 手动触发时先存成构建产物
+      # 手动触发（非 tag）时只存构建产物，供下载检查
+      - name: Upload build artifacts
         if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
         uses: actions/upload-artifact@v4
         with:
@@ -38,7 +41,8 @@ jobs:
           path: release/*.exe
           retention-days: 7
 
-      - name: 打 tag 时自动挂到 Release
+      # 推 tag 时把安装包挂到 Release
+      - name: Attach installers to Release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
