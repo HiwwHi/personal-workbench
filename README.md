@@ -10,7 +10,7 @@
 > 待办在 Todoist，笔记在 Notion，密码在浏览器，学习进度在 Excel，随手记在手机备忘录。
 > 这个工作台把它们收进一个本地页面：打开就能用，关掉不留痕。
 
-![主题与外观设置](docs/screenshot-theme.png)
+![首页](docs/screenshot-home.png)
 
 ## 为什么值得试
 
@@ -55,6 +55,8 @@
 - 一键在 Cursor / VSCode 里打开当前笔记的对应行。
 - Skill 能装进 Cursor 用户目录，装一次所有项目都认；也能导成 `.cursor` 文件夹拷到项目里。
 
+![主题与外观设置](docs/screenshot-theme.png)
+
 ## 功能一览
 
 | 模块 | 说明 |
@@ -68,6 +70,10 @@
 | 随手记 | 标签、置顶、全文搜索 |
 | 健康管理 | 喝水 / 起身 / 护眼的弱提醒 |
 | 系统设置 | 主题、数据源、备份、迁移文档、AI 联动 |
+
+![任务管理](docs/screenshot-tasks.png)
+
+![学习笔记](docs/screenshot-notes.png)
 
 ## 下载安装
 
