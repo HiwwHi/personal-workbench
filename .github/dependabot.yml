@@ -1,0 +1,24 @@
+version: 2
+updates:
+  # 运行依赖只有 electron 与 electron-builder，每周看一眼有没有安全更新
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: "chore(deps)"
+    ignore:
+      # electron 大版本升级要人工验证，别让它自动提
+      - dependency-name: electron
+        update-types:
+          - version-update:semver-major
+
+  # 顺便把 workflow 里用的 action 也盯一下
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: "chore(ci)"
