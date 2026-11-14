@@ -1,7 +1,10 @@
 import * as store from '../lib/store.js';
 import * as M from '../lib/model.js';
+import * as fsa from '../lib/fsa.js';
+import * as mdmod from '../lib/md.js';
+import * as report from '../lib/report.js';
 import * as health from '../lib/health.js';
-import { esc, today, relDate, ring } from '../lib/ui.js';
+import { esc, today, relDate, ring, modal, toast, download } from '../lib/ui.js';
 
 export const meta = { key: 'home', title: '首页', sub: '' };
 
@@ -103,6 +106,16 @@ export function mount(root) {
       </div>`);
   }
 
+  cards.push(`
+    <div class="card">
+      <div class="card-head"><div class="card-title">小结与报告</div><span class="hint">可直接丢给 AI 总结</span></div>
+      <div class="hint mb12">周报统计本周一到今天，月报统计本月 1 号到今天。内容含完成的任务、项目进度、学习打卡、随手记与健康记录。</div>
+      <div class="row wrap">
+        <button class="btn primary sm" id="btnWeekly">生成周报</button>
+        <button class="btn sm" id="btnMonthly">生成月报</button>
+      </div>
+    </div>`);
+
   if (!showHealth) {
     cards.push(`<div class="hint" style="grid-column:1/-1">健康提醒和统计已收进「健康管理」页，首页默认不显示（系统设置里可以打开）。</div>`);
   }
@@ -137,6 +150,36 @@ export function mount(root) {
     });
     location.hash = '#/notes';
   }));
+
+  const bWeek = root.querySelector('#btnWeekly');
+  if (bWeek) bWeek.addEventListener('click', () => reportModal('week'));
+  const bMonth = root.querySelector('#btnMonthly');
+  if (bMonth) bMonth.addEventListener('click', () => reportModal('month'));
+}
+
+/* 生成并预览报告；确认后落到「中间文件目录/报告/」，没有目录就下载 */
+function reportModal(kind) {
+  const label = kind === 'month' ? '月报' : '周报';
+  const { from, to } = report.rangeOf(kind);
+  const md = report.build(kind);
+  const name = report.fileName(kind);
+  modal({
+    title: `工作台${label} · ${from} ~ ${to}`, wide: true,
+    okText: '保存到中间文件目录',
+    body: `<div class="hint mb8">文件名：<code>${esc(name)}</code> · ${md.split('\n').length} 行。保存位置：「中间文件目录/报告/」</div>
+      <div class="hint mb12">想让它更有内容，先把这段复制给 AI，让它按你的语气改一版再存。</div>
+      <div class="mdview" style="max-height:50vh;overflow:auto;border:1px solid var(--border);border-radius:8px;padding:12px">${mdmod.render(md)}</div>`,
+    onOk: async () => {
+      try {
+        await fsa.writeRuntime('报告', name, md);
+        toast('已保存到「中间文件目录/报告/」', 'ok');
+      } catch (e) {
+        download(name, md, 'text/markdown;charset=utf-8');
+        toast('中间文件目录不可用，已改为下载', 'warn');
+      }
+      return true;
+    }
+  });
 }
 
 function greet() {
