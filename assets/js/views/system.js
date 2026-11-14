@@ -259,6 +259,9 @@ alwaysApply: true
 export async function mount(root) {
   const st = store.settings();
   const d = store.load();
+  // 版本号由服务端从 package.json 读出来注入页面，这里只负责显示
+  const verMeta = document.querySelector('meta[name="wb-version"]');
+  const VER = verMeta ? verMeta.getAttribute('content') : '';
   const rtName = await fsa.runtimeName();
   const workName = (await fsa.currentDir('work'))?.name || null;
   const knowName = (await fsa.currentDir('know'))?.name || null;
@@ -481,6 +484,7 @@ export async function mount(root) {
 
       <div class="card">
         <div class="card-head"><div class="card-title">系统信息</div><span class="hint">让我帮你改的时候，发这份就够</span></div>
+        <div class="kv"><span class="k">版本</span><span class="v">${VER ? 'v' + esc(VER) : '（未知）'}</span></div>
         <div class="kv"><span class="k">运行方式</span><span class="v">本地服务 http://127.0.0.1:8733（只监听本机）</span></div>
         <div class="kv"><span class="k">技术栈</span><span class="v">原生 ES module + CSS 变量，无框架、无构建</span></div>
         <div class="kv"><span class="k">数据存储</span><span class="v">localStorage['wb.data.v1']（按 origin 隔离）</span></div>

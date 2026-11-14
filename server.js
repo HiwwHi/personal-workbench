@@ -8,6 +8,12 @@ const ROOT = __dirname;
 const PORT = Number(process.argv[2]) || 8733;
 let WHITELIST_FILE = path.join(ROOT, '.workbench-whitelist.json');
 
+/* 版本号只认 package.json，页面和安装包不会对不上 */
+const APP_VERSION = (() => {
+  try { return String(JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8')).version || ''); }
+  catch { return ''; }
+})();
+
 /* 每次启动换一把随机令牌，随页面下发；本机其它程序猜不到，就调不动接口 */
 const TOKEN = crypto.randomBytes(18).toString('hex');
 const MAX_BODY = 2 * 1024 * 1024;   // 2MB，装 Skill 时内容可能较大
@@ -355,7 +361,7 @@ const server = http.createServer(async (req, res) => {
     if (rel === 'index.html') {
       return fs.readFile(file, 'utf8', (err, html) => {
         if (err) return res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' }).end('404');
-        const out = html.replace('</head>', `<meta name="wb-token" content="${TOKEN}">\n</head>`);
+        const out = html.replace('</head>', `<meta name="wb-token" content="${TOKEN}">\n<meta name="wb-version" content="${APP_VERSION}">\n</head>`);
         res.writeHead(200, { ...STATIC_HEADERS, 'Content-Type': MIME['.html'], 'Content-Length': Buffer.byteLength(out) });
         res.end(out);
       });
@@ -420,7 +426,7 @@ function startServer({ port = PORT, dataDir = ROOT } = {}) {
     const onError = (e) => { server.off('listening', onListening); reject(e); };
     const onListening = () => {
       server.off('error', onError);
-      console.log(`工作台已启动：http://127.0.0.1:${port}`);
+      console.log(`工作台 v${APP_VERSION || '?'} 已启动：http://127.0.0.1:${port}`);
       console.log('只监听本机 127.0.0.1，完全不联网。');
       console.log(`信任根目录数：${ROOTS.length}${ROOTS.length ? '（' + ROOTS.join('，') + '）' : ''}`);
       resolve(server);
