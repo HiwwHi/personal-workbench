@@ -86,7 +86,6 @@ async function buildIndex() {
   d.study.forEach(s => items.push({ kind: '学习', title: s.name, path: s.deadline || '', go: '#/study' }));
   d.skills.forEach(s => items.push({ kind: 'Skill', title: s.name, path: s.description || '', go: '#/skills' }));
   if (!hide) d.jots.forEach(j => items.push({ kind: '随手记', title: String(j.text || '').slice(0, 40), path: (j.tags || []).join(' '), go: '#/jots' }));
-  const seenMem = new Set();
   for (const slot of ['work', 'know']) {
     const label = slot === 'work' ? '流程笔记' : '知识笔记';
     if (fsa.supported() && await fsa.restoreDir(slot, { silent: true })) {
@@ -95,7 +94,6 @@ async function buildIndex() {
       }
     } else {
       (d.notesDocs || []).filter(n => (n.slot || 'work') === slot).forEach(n => {
-        seenMem.add(n.name);
         items.push({ kind: label, title: n.name, path: '内置', go: '#/notes', slot });
       });
     }

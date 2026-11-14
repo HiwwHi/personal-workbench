@@ -256,7 +256,3 @@ export async function moveToTrash(slot, file) {
   return rel;
 }
 
-export async function fileUrl(file) {
-  const f = await file.handle.getFile();
-  return URL.createObjectURL(f);
-}
