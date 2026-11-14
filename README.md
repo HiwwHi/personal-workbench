@@ -6,6 +6,7 @@
 ![offline](https://img.shields.io/badge/works-100%25%20offline-5F8F71)
 ![no account](https://img.shields.io/badge/account-not%20required-6A5A93)
 ![license](https://img.shields.io/badge/license-MIT-A5703C)
+[![release](https://img.shields.io/github/v/release/HiwwHi/personal-workbench?color=4A6F8A)](../../releases/latest)
 
 > 待办在 Todoist，笔记在 Notion，密码在浏览器，学习进度在 Excel，随手记在手机备忘录。
 > 这个工作台把它们收进一个本地页面：打开就能用，关掉不留痕。
@@ -180,6 +181,14 @@ personal-workbench/
 ```bash
 npm run dist     # 生成安装版与免安装版，输出到 release/
 ```
+
+> 推 `v*` 标签会由 GitHub Actions 自动打包并挂到 Release（见 `.github/workflows/build-release.yml`），本地打包一般只用于调试。改完代码可以先跑 `npm run selfcheck` 把基础功能过一遍。
+
+## 参与
+
+- 遇到问题或有建议：提 [Issue](../../issues/new/choose)（有模板，填一下版本号和运行方式就行）
+- 想改代码：先看 [CONTRIBUTING.md](CONTRIBUTING.md)，里面列了 7 条硬规矩（不加框架、不联网、路径校验等）
+- 每个版本改了什么：[CHANGELOG.md](CHANGELOG.md)
 
 ## 许可
 
