@@ -14,6 +14,7 @@ import * as jots from './views/jots.js';
 import * as health from './views/health.js';
 import * as system from './views/system.js';
 import * as ai from './lib/aibridge.js';
+import * as autobackup from './lib/autobackup.js';
 
 const views = { home, vault, tasks, study, skills, notes, jots, health, system };
 const ORDER = ['home', 'vault', 'tasks', 'study', 'skills', 'notes', 'jots', 'health', 'system'];
@@ -156,6 +157,7 @@ function boot() {
   system.applyAccent(st.accent, tid);
   document.body.classList.toggle('privacy-on', !!st.privacy);
   ai.registerRoots().catch(() => {});  // 异步告知本地服务信任根目录，用于后续一键用 Cursor / VSCode 打开
+  autobackup.setup();                  // 数据变动后自动备份到「中间文件目录/备份/json/」
   if (location.hash === '') location.hash = '#/home';
   H.ensureDefaults();
   H.start();

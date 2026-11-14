@@ -2,6 +2,7 @@ import * as store from '../lib/store.js';
 import * as fsa from '../lib/fsa.js';
 import * as skillsView from './skills.js';
 import * as ai from '../lib/aibridge.js';
+import * as autobackup from '../lib/autobackup.js';
 import { esc, toast, modal, confirmBox, download, today } from '../lib/ui.js';
 
 export const meta = { key: 'system', title: '系统设置', sub: '外观 · 数据源 · 备份 · 维护信息' };
@@ -262,6 +263,8 @@ export async function mount(root) {
   // 版本号由服务端从 package.json 读出来注入页面，这里只负责显示
   const verMeta = document.querySelector('meta[name="wb-version"]');
   const VER = verMeta ? verMeta.getAttribute('content') : '';
+  const bkAt = autobackup.lastAt();
+  const bkText = bkAt ? new Date(bkAt).toLocaleString('zh-CN') : '';
   const rtName = await fsa.runtimeName();
   const workName = (await fsa.currentDir('work'))?.name || null;
   const knowName = (await fsa.currentDir('know'))?.name || null;
@@ -480,6 +483,23 @@ export async function mount(root) {
           <button class="btn sm" id="btnImport">从 JSON 恢复</button>
         </div>
         <div class="hint mt12">JSON 里密码是<b>明文</b>的，别丢网盘或发聊天。笔记正文不在里面（它们在你的文件夹里）。</div>
+
+        <div class="row-between wrap" style="border-top:1px solid var(--border);margin-top:14px;padding-top:12px">
+          <div>
+            <div class="card-title">自动备份</div>
+            <div class="hint mt6">
+              数据变动后最多每 10 分钟写一份到「中间文件目录/${esc(autobackup.SUB)}/」，只保留最近 ${autobackup.KEEP} 份。
+              ${bkText ? '上次备份：' + esc(bkText) : '还没备份过'}
+              ${rtName ? '' : '（需要先设置上面的「中间文件目录」）'}
+            </div>
+          </div>
+          <div class="row">
+            <label class="row" style="gap:6px;font-size:12.5px;color:var(--text-2)">
+              <input type="checkbox" id="swAutoBackup" ${st.autoBackup === false ? '' : 'checked'}> 开启
+            </label>
+            <button class="btn sm" id="btnBackupNow">立即备份</button>
+          </div>
+        </div>
       </div>
 
       <div class="card">
@@ -723,6 +743,17 @@ function wire(root) {
   if (be) be.addEventListener('click', () => {
     download(`工作台备份-${today()}.json`, store.exportAll(), 'application/json;charset=utf-8');
     toast('已导出备份文件', 'ok');
+  });
+
+  const bnow = root.querySelector('#btnBackupNow');
+  if (bnow) bnow.addEventListener('click', async () => {
+    try { await autobackup.backupNow(); mount(root); } catch (e) { toast(e.message, 'warn'); }
+  });
+
+  const swb = root.querySelector('#swAutoBackup');
+  if (swb) swb.addEventListener('change', () => {
+    store.setSetting('autoBackup', swb.checked);
+    toast(swb.checked ? '已开启自动备份' : '已关闭自动备份', 'ok');
   });
 
   const bi = root.querySelector('#btnImport');

@@ -23,6 +23,8 @@ const DEFAULT = {
     privacy: false,        // 隐私模式：隐藏密码 / 健康 / 随手记
     notesSlot: 'work',
     accent: '',           // 自定义主色（留空=用主题原色）
+    autoBackup: true,     // 数据变动后自动写一份 JSON 到中间文件目录
+    lastAutoBackup: 0,    // 上次自动备份的时间戳
     // 目录绝对路径：浏览器 FSA 只能拿到文件夹名，拿不到路径，需要手动填写
     dirPaths: { work: '', know: '', runtime: '' }
   }
@@ -56,6 +58,8 @@ export function load() {
 export function save() {
   try {
     localStorage.setItem(KEY, JSON.stringify(load()));
+    // 通知自动备份等监听者；高频调用，保持轻量
+    try { window.dispatchEvent(new CustomEvent('wb:saved')); } catch {}
     return true;
   } catch (e) {
     // 多半是本地存储写满：告诉界面一声，别让用户以为存上了

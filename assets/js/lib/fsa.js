@@ -225,6 +225,27 @@ export async function runtimePath() {
   return { name: h.name, root: absPath('runtime') };
 }
 
+/* 列运行时目录某个子目录下的文件名（不递归）；目录不存在时返回空数组 */
+export async function listRuntime(sub) {
+  const root = await restoreDir('runtime');
+  if (!root) return [];
+  let dir;
+  try { dir = sub ? await ensurePath(root, sub) : root; } catch { return []; }
+  const out = [];
+  for await (const [name, handle] of dir.entries()) {
+    if (handle.kind === 'file') out.push(name);
+  }
+  return out.sort();
+}
+
+export async function removeRuntime(sub, name) {
+  const root = await restoreDir('runtime');
+  if (!root) return false;
+  const dir = sub ? await ensurePath(root, sub) : root;
+  await dir.removeEntry(name);
+  return true;
+}
+
 /* ---------- 笔记文件操作 ---------- */
 
 export async function saveWithBackup(slot, file, content, expectedModified) {
