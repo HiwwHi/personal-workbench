@@ -25,6 +25,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # 打包前先验一遍基础功能，避免"包打出来了但根本跑不起来"
+      - name: Self check
+        run: npm run selfcheck
+
       # 打 tag 时 electron-builder 默认会自己去发 Release（需要 GH_TOKEN，会直接失败）。
       # 这里用 --publish never 关掉它，发布统一交给下面的 Release 步骤。
       - name: Build installers
