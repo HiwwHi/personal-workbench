@@ -92,7 +92,8 @@ npm start        # 桌面版（Electron，带托盘）
 只想用浏览器：
 
 ```bash
-npm run server   # 等价于 node server.js，然后打开 http://127.0.0.1:8733
+npm run server     # 等价于 node server.js，然后打开 http://127.0.0.1:8733
+npm run selfcheck  # 自检：起临时服务跑一遍关键检查（不写文件、不联网）
 ```
 
 Windows 也可以直接双击 `start-workbench.vbs`：无黑框启动 + 托盘图标（这条路径需要本机有 node，`tray.ps1` 会依次找项目 `runtime\node.exe`、系统安装的 node 和 PATH）。
@@ -106,12 +107,14 @@ personal-workbench/
 ├─ index.html              单页外壳
 ├─ server.js               本地服务（静态文件 + 受限接口）
 ├─ electron/main.js        主进程：起服务 / 开窗口 / 托盘
+├─ electron/preload.js     桌面版专属能力（原生选目录）
 ├─ assets/
 │  ├─ css/main.css         全部样式，配色走 CSS 变量
 │  └─ js/
 │     ├─ app.js            路由 / 搜索面板 / 备份
 │     ├─ lib/              store / fsa / md / ui / health / model / aibridge
 │     └─ views/            9 个页面模块
+├─ scripts/selfcheck.js    自检脚本（npm run selfcheck）
 ├─ start-workbench.vbs     无黑框启动（源码方式）
 ├─ start-workbench.bat     兼容入口
 ├─ tray.ps1                托盘常驻 + 开机自启（源码方式）
