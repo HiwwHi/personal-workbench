@@ -1,0 +1,42 @@
+name: 功能建议
+description: 想要一个新功能，或者觉得哪里该改
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        提之前先看一下 [CONTRIBUTING.md](../blob/main/CONTRIBUTING.md)：这个项目**不加联网功能、不引入框架和构建步骤**，这两类建议不会被接受。
+
+  - type: textarea
+    id: scene
+    attributes:
+      label: 你遇到的场景
+      description: 说场景比说方案有用——你当时在做什么、哪里别扭
+      placeholder: 我每次写完笔记想…，现在要…
+    validations:
+      required: true
+
+  - type: textarea
+    id: idea
+    attributes:
+      label: 你希望的解法（可选）
+      placeholder: 可以在「系统设置」里加一个…
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: 相关模块
+      options:
+        - 首页 / 汇总
+        - 账号密码
+        - 任务管理
+        - 学习计划
+        - 工作 Skill
+        - 学习笔记
+        - 随手记
+        - 健康管理
+        - 系统设置 / 主题
+        - AI 联动（Cursor / VSCode）
+        - 其他 / 说不清
+    validations:
+      required: true
