@@ -1,0 +1,24 @@
+# 自动生成的 Release 说明按 label 分类。
+# 注意：只有走 PR 合并的改动才会出现在这里；直接推到 main 的提交不会进自动说明。
+changelog:
+  exclude:
+    labels:
+      - ignore-for-release
+    authors:
+      - dependabot
+  categories:
+    - title: 新功能
+      labels:
+        - enhancement
+        - feature
+    - title: 修复
+      labels:
+        - bug
+        - fix
+    - title: 文档与工程
+      labels:
+        - documentation
+        - chore
+    - title: 其它改动
+      labels:
+        - "*"
