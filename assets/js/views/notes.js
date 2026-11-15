@@ -595,6 +595,15 @@ function sync() {
 function wire() {
   const root = document.querySelector('#view');
 
+  // [[笔记名]] 双链：当前槽位里按名字找，找到就打开，找不到给个提示
+  root.querySelectorAll('.wikilink').forEach(a => a.addEventListener('click', e => {
+    e.preventDefault();
+    const n = a.dataset.wiki;
+    const f = files.find(x => x.name.replace(/\.md$/i, '') === n || x.path === n);
+    if (f) openFile(f);
+    else toast('当前槽位里没有《' + n + '》，换个槽位或换个写法', 'warn');
+  }));
+
   root.querySelectorAll('[data-slot]').forEach(el => el.addEventListener('click', () => switchSlot(el.dataset.slot)));
 
   const q = root.querySelector('#nq');

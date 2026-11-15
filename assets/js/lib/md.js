@@ -17,6 +17,8 @@ function inline(s) {
     const src = safeUrl(u);
     return src ? put('<img src="' + src + '" alt="' + a + '">') : m;
   });
+  // [[笔记名]] 双链：渲染成可点的链接，由页面负责跳转
+  s = s.replace(/\[\[([^\[\]]{1,60})\]\]/g, (m, n) => put('<a href="#" class="wikilink" data-wiki="' + n + '">' + n + '</a>'));
   s = s.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (m, a, u) => {
     const href = safeUrl(u);
     return href ? put('<a href="' + href + '" target="_blank" rel="noreferrer noopener">' + a + '</a>') : a;
