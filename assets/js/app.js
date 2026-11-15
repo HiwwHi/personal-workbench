@@ -102,6 +102,8 @@ async function buildIndex() {
   return items;
 }
 
+let indexCache = null;      // 上次建好的搜索索引：先秒开，再后台重建
+
 function openPalette() {
   const box = $('#palette');
   box.hidden = false;
@@ -113,7 +115,12 @@ function openPalette() {
   let rows = [];
   let cur = 0;
 
-  buildIndex().then(items => { index = items; paint(''); });
+  if (indexCache) { index = indexCache; paint(''); }
+  buildIndex().then(items => {
+    index = items;
+    indexCache = items;
+    paint(input.value);          // 重建完再按当前关键词刷一次
+  });
 
   function paint(q) {
     const hay = q.toLowerCase();
