@@ -119,6 +119,40 @@ async function switchSlot(next) {
   render();
 }
 
+/* 草稿只写 localStorage，绝不碰磁盘：遵守「手动确认才写盘」，同时防编辑内容丢失 */
+let draftTimer = null;
+const DRAFT_MAX = 200000;          // 单篇超过 ~200KB 就不缓存，避免写爆本地存储
+const DRAFT_KEEP = 5;              // 每个槽位最多留 5 篇草稿
+
+function draftsOf() {
+  const ui = store.notesSlotUI(slot);
+  ui.drafts = ui.drafts || {};
+  return ui.drafts;
+}
+
+function draftSave() {
+  clearTimeout(draftTimer);
+  draftTimer = setTimeout(() => {
+    if (!current || !dirty || !text || text.length > DRAFT_MAX) return;
+    store.update(() => {
+      const ds = draftsOf();
+      ds[current.path] = { text, at: Date.now() };
+      // 只留最近的几篇，别把 localStorage 塞满
+      const keys = Object.keys(ds).sort((a, b) => Number(ds[b].at || 0) - Number(ds[a].at || 0));
+      keys.slice(DRAFT_KEEP).forEach(k => { delete ds[k]; });
+    });
+  }, 1200);
+}
+
+function draftClear(path) {
+  clearTimeout(draftTimer);
+  store.update(() => {
+    const ds = draftsOf();
+    if (path) delete ds[path];
+    else Object.keys(ds).forEach(k => { delete ds[k]; });
+  });
+}
+
 function bumpRecent(path, section) {
   store.update(() => {
     const s = store.notesSlotUI(slot);
@@ -143,7 +177,21 @@ async function loadFiles() {
 async function openFile(f, section) {
   const res = await source.read(f);
   if (dirty && !(await confirmBox('有未保存的修改', '当前笔记还没保存到磁盘，切换会丢失。确定离开吗？', '放弃修改'))) return;
-  text = res.text;
+  if (dirty) draftClear(current && current.path);      // 用户明确放弃，别留着下次又弹
+
+  // 有本地草稿就问一句：恢复（不写盘）还是丢掉
+  let draftText = '';
+  const dft = draftsOf()[f.path];
+  if (dft && String(dft.text) !== String(res.text)) {
+    const mins = Math.max(1, Math.round((Date.now() - Number(dft.at || 0)) / 60000));
+    const ok = await confirmBox('发现未保存的草稿',
+      `《${f.name}》有一份 ${mins} 分钟前的内容只存在本机浏览器里，还没写进文件。要恢复到编辑框吗？`,
+      '恢复草稿');
+    if (ok) draftText = dft.text; else draftClear(f.path);
+  }
+
+  text = draftText || res.text;
+  dirty = !!draftText;
   modified = res.modified;
   current = f;
   dirty = false;
@@ -183,11 +231,12 @@ async function doSave() {
     );
     if (!ok) { toast('已取消保存，未改动任何文件', 'warn'); return; }
     const force = await source.save(current, text, null);
-    if (force.ok) { modified = force.modified; dirty = false; toast('已保存', 'ok'); render(); }
+    if (force.ok) { modified = force.modified; dirty = false; draftClear(current.path); toast('已保存', 'ok'); render(); }
     return;
   }
   modified = r.modified;
   dirty = false;
+  draftClear(current.path);
   toast(srcKey() === 'fsa' ? '已保存到磁盘（原文件已备份到中间文件目录）' : '已保存', 'ok');
   render();
 }
@@ -521,6 +570,7 @@ function sync() {
   if (!ta) return;
   text = ta.value;
   dirty = true;
+  draftSave();
   const b = document.querySelector('#btnSave');
   if (b) { b.disabled = false; b.classList.add('primary'); }
   const badge = document.querySelector('.readonly-banner');
@@ -578,6 +628,7 @@ function wire() {
     if (next === 'read' && dirty) {
       if (!(await confirmBox('有未保存的修改', '退出编辑模式会丢失未保存内容，确定吗？', '放弃修改'))) return;
       dirty = false;
+      draftClear(current && current.path);
     }
     mode = next; render();
   }));
