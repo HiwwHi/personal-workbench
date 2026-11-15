@@ -135,6 +135,8 @@ let bound = false;
 export function mount(root) {
   const all = items();
   const gps = groups();
+  // 分组被删或改名后，筛选值可能已不存在：不重置的话列表永久空白，下拉却显示「全部」
+  if (filter.group !== '全部' && !gps.includes(filter.group)) filter.group = '全部';
   const chk = analyze(all);
   const flagTotal = chk.weak + chk.dup + chk.old;
   const list = all.filter(v => {
