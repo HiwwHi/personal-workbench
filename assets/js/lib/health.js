@@ -145,7 +145,11 @@ function tick() {
   for (const r of rules()) {
     if (!r.enabled) continue;
     elapsed[r.id] = (elapsed[r.id] || 0) + secs;
-    if (elapsed[r.id] >= Number(r.interval)) { fire(r); elapsed[r.id] = 0; }
+    if (elapsed[r.id] < Number(r.interval)) continue;
+    // 点了「稍后 10 分钟」：别把计时清零，否则要再等满一个间隔才提醒
+    if (snoozeUntil[r.id] && Date.now() < snoozeUntil[r.id]) continue;
+    fire(r);
+    elapsed[r.id] = 0;
   }
 }
 
