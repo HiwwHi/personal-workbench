@@ -31,12 +31,21 @@ export function setGoals(patch) {
   store.update(d => { d.settings.goals = Object.assign({}, goals(), patch); });
 }
 
+/* 只在缺字段时写一次：tick 每 20 秒调一次 rules()，无条件 update 会一直全量写盘 */
 export function ensureDefaults() {
+  const h = store.load().health;
+  if (h && Array.isArray(h.rules) && h.logs && h.settings && h.settings.inited) return;
   store.update(d => {
     if (!d.health) d.health = { rules: [], logs: {}, settings: {} };
-    if (!d.health.rules || !d.health.rules.length) d.health.rules = DEFAULT_RULES.map(r => Object.assign({}, r));
+    if (!Array.isArray(d.health.rules)) d.health.rules = [];
     if (!d.health.logs) d.health.logs = {};
-    if (!d.health.settings) d.health.settings = { enabled: true };
+    if (!d.health.settings) d.health.settings = {};
+    // 只有「从没初始化过」才灌默认三条：用户把规则删光了不该复活
+    const touched = Object.keys(d.health.logs).length > 0 || d.health.settings.enabled !== undefined;
+    if (!d.health.rules.length && !d.health.settings.inited && !touched) {
+      d.health.rules = DEFAULT_RULES.map(r => Object.assign({}, r));
+    }
+    d.health.settings.inited = true;
   });
 }
 
