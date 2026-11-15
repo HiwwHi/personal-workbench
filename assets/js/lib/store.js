@@ -6,6 +6,7 @@ const DEFAULT = {
   study: [],
   skills: [],
   jots: [],
+  notesDocs: [],          // 内置笔记库（正文存在 localStorage），漏了这个会导致恢复备份时丢笔记
   health: { rules: [], logs: {}, settings: {} },
   notesUI: {
     recent: {}, recentOrder: [], lastNote: null, pendingOpen: null,
