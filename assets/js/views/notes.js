@@ -441,9 +441,13 @@ function toolbarHTML() {
 function render() {
   const root = document.querySelector('#view');
   const recent = recentList();
-  const visibleFiles = query
+  // 当前打开的排最前，其次是上次看过的，其余按名称
+  const uiNow = store.notesSlotUI(slot);
+  const rank = p => (current && p === current.path ? 0 : p === uiNow.last ? 1 : 2);
+  const visibleFiles = (query
     ? files.filter(f => f.path.toLowerCase().includes(query.toLowerCase()))
-    : files;
+    : files.slice())
+    .sort((a, b) => rank(a.path) - rank(b.path) || a.path.localeCompare(b.path, 'zh'));
 
   root.innerHTML = `
     <div class="notes-layout">
