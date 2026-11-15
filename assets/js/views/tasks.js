@@ -263,7 +263,11 @@ export function mount(root) {
           <div class="progress"><i style="width:${pr}%"></i></div>
           <div class="row-between mt6">
             <span class="hint">${(p.tasks || []).filter(t => M.isDone(t)).length}/${(p.tasks || []).length} 项完成</span>
-            <button class="btn-ghost sm" data-tadd="${p.id}">+ 任务</button>
+            <span class="row" style="gap:4px">
+              <button class="btn-ghost sm" data-pdone="${p.id}">全部完成</button>
+              <button class="btn-ghost sm" data-pclear="${p.id}">清除已完成</button>
+              <button class="btn-ghost sm" data-tadd="${p.id}">+ 任务</button>
+            </span>
           </div>
           ${(p.modules || []).length ? `<div class="mt12">${p.modules.map(m => `<span class="tag blue" style="margin:2px 4px 2px 0">${esc(m.name)} · ${esc(m.owner || '未指定')}</span>`).join('')}</div>` : ''}
         </div>`;
@@ -277,6 +281,40 @@ export function mount(root) {
     </div>
     ${body}
   `;
+
+  // 批量：整个项目一键完成 / 清掉已完成
+  root.querySelectorAll('[data-pdone]').forEach(b => b.addEventListener('click', async () => {
+    const p = store.load().projects.find(x => x.id === b.dataset.pdone);
+    if (!p) return;
+    const left = (p.tasks || []).filter(t => !M.isDone(t)).length;
+    if (!left) { toast('这个项目没有未完成的任务', 'warn'); return; }
+    if (!(await confirmBox('全部标记完成', `把《${p.name}》里 ${left} 个未完成任务都标记为完成？`, '全部完成'))) return;
+    const d = today();
+    store.update(st => {
+      const pr = st.projects.find(x => x.id === p.id);
+      (pr.tasks || []).forEach(t => {
+        if (M.isDone(t)) return;
+        t.history = t.history || [];
+        if (t.repeat === 'none') { t.done = true; t.doneAt = new Date(d + 'T12:00:00').toISOString(); }
+        t.lastDone = d;
+        t.history.push({ date: d, at: new Date().toISOString() });
+      });
+    });
+    toast('已全部标记完成', 'ok'); mount(root);
+  }));
+
+  root.querySelectorAll('[data-pclear]').forEach(b => b.addEventListener('click', async () => {
+    const p = store.load().projects.find(x => x.id === b.dataset.pclear);
+    if (!p) return;
+    const done = (p.tasks || []).filter(t => M.isDone(t)).length;
+    if (!done) { toast('这个项目没有已完成的任务', 'warn'); return; }
+    if (!(await confirmBox('清除已完成任务', `删除《${p.name}》里 ${done} 个已完成任务？相关完成记录也会一起消失。`, '删除'))) return;
+    store.update(st => {
+      const pr = st.projects.find(x => x.id === p.id);
+      if (pr) pr.tasks = (pr.tasks || []).filter(t => !M.isDone(t));
+    });
+    toast('已清除'); mount(root);
+  }));
 
   root.querySelectorAll('[data-tab]').forEach(el => el.addEventListener('click', () => { tab = el.dataset.tab; if (tab === 'cal') monthInfo(); mount(root); }));
   root.querySelectorAll('.check').forEach(c => c.addEventListener('click', () => {
