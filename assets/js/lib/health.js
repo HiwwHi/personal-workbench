@@ -10,6 +10,27 @@ const DEFAULT_RULES = [
   { id: 'eye', name: '护眼远眺', interval: 25, enabled: true, msg: '看 20 秒窗外的远处，让眼睛放松一下' }
 ];
 
+/* 每日目标：首页和健康页都从这里读，避免两处各写一份 6/5/8 */
+export const GOAL_META = [
+  { key: 'water', label: '喝水', unit: '杯', def: 6 },
+  { key: 'move', label: '起身', unit: '次', def: 5 },
+  { key: 'eye', label: '护眼', unit: '次', def: 8 }
+];
+
+export function goals() {
+  const raw = store.settings().goals || {};
+  const out = {};
+  for (const m of GOAL_META) {
+    const v = Number(raw[m.key]);
+    out[m.key] = Number.isFinite(v) && v > 0 && v <= 999 ? Math.round(v) : m.def;
+  }
+  return out;
+}
+
+export function setGoals(patch) {
+  store.update(d => { d.settings.goals = Object.assign({}, goals(), patch); });
+}
+
 export function ensureDefaults() {
   store.update(d => {
     if (!d.health) d.health = { rules: [], logs: {}, settings: {} };

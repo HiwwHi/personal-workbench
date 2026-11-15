@@ -38,6 +38,7 @@ export function mount(root) {
   const hcount = (v, goal) => `${v}/${goal}`;
 
   const showHealth = !!st.homeHealth && !st.privacy;
+  const G = health.goals();
 
   const cards = [];
 
@@ -65,9 +66,9 @@ export function mount(root) {
       <div class="card">
         <div class="card-head"><div class="card-title">今日健康</div><a class="btn sm" href="#/health">设置提醒</a></div>
         <div class="ring-row" style="justify-content:space-around">
-          ${ring(Math.min(1, log.water / 6), 78, log.water, '喝水 ' + hcount(log.water, 6))}
-          ${ring(Math.min(1, log.move / 5), 78, log.move, '起身 ' + hcount(log.move, 5))}
-          ${ring(Math.min(1, log.eye / 8), 78, log.eye, '护眼 ' + hcount(log.eye, 8))}
+          ${ring(Math.min(1, log.water / G.water), 78, log.water, '喝水 ' + hcount(log.water, G.water))}
+          ${ring(Math.min(1, log.move / G.move), 78, log.move, '起身 ' + hcount(log.move, G.move))}
+          ${ring(Math.min(1, log.eye / G.eye), 78, log.eye, '护眼 ' + hcount(log.eye, G.eye))}
         </div>
         <div class="hint mt12">今天已在电脑前约 ${Math.max(1, health.activeMinutes())} 分钟，${log.move >= 5 ? '起身目标已达成，不错' : '别忘了起来走走'}。</div>
       </div>`);

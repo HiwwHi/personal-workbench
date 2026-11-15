@@ -26,20 +26,22 @@ export function mount(root) {
   H.ensureDefaults();
   const d = store.load().health;
   const log = H.logOf(today());
+  const G = H.goals();
 
   root.innerHTML = `
     <div class="grid grid-2">
       <div class="card">
         <div class="card-head"><div class="card-title">今天的小目标</div><span class="hint">${today()}</span></div>
         <div class="ring-row" style="justify-content:space-around">
-          ${ring(Math.min(1, log.water / 6), 84, log.water, '喝水 / 目标 6 杯')}
-          ${ring(Math.min(1, log.move / 5), 84, log.move, '起身 / 目标 5 次')}
-          ${ring(Math.min(1, log.eye / 8), 84, log.eye, '护眼 / 目标 8 次')}
+          ${ring(Math.min(1, log.water / G.water), 84, log.water, '喝水 / 目标 ' + G.water + ' 杯')}
+          ${ring(Math.min(1, log.move / G.move), 84, log.move, '起身 / 目标 ' + G.move + ' 次')}
+          ${ring(Math.min(1, log.eye / G.eye), 84, log.eye, '护眼 / 目标 ' + G.eye + ' 次')}
         </div>
         <div class="row wrap mt12">
           <button class="btn sm green" data-add="water">+1 杯水</button>
           <button class="btn sm green" data-add="move">+1 次起身</button>
           <button class="btn sm green" data-add="eye">+1 次护眼</button>
+          <button class="btn sm" id="hGoals">调整目标</button>
         </div>
         <div class="hint mt12">今天在电脑前的累计时长约 <b>${H.activeMinutes()}</b> 分钟（从打开工作台开始算，每 20 秒统计一次；离开超过 5 分钟会自动暂停）。</div>
       </div>
@@ -132,6 +134,26 @@ export function mount(root) {
       }
     });
   });
+  root.querySelector('#hGoals').addEventListener('click', () => {
+    modal({
+      title: '每日健康目标', okText: '保存',
+      body: H.GOAL_META.map(m => `
+        <label class="field"><span>${m.label}（${m.unit} / 天）</span>
+          <input type="number" min="1" max="999" data-goal="${m.key}" value="${G[m.key]}"></label>`).join(''),
+      done: () => mount(root),
+      onOk(body) {
+        const patch = {};
+        for (const m of H.GOAL_META) {
+          const v = Math.round(Number(body.querySelector('[data-goal="' + m.key + '"]').value));
+          patch[m.key] = Number.isFinite(v) && v > 0 && v <= 999 ? v : m.def;
+        }
+        H.setGoals(patch);
+        toast('目标已保存', 'ok');
+        return true;
+      }
+    });
+  });
+
   root.querySelector('#hEnable').addEventListener('change', e => {
     store.update(st => { st.health.settings.enabled = e.target.checked; });
     toast(e.target.checked ? '健康提醒已开启' : '健康提醒已暂停');

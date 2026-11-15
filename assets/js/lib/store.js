@@ -25,6 +25,7 @@ const DEFAULT = {
     accent: '',           // 自定义主色（留空=用主题原色）
     autoBackup: true,     // 数据变动后自动写一份 JSON 到中间文件目录
     lastAutoBackup: 0,    // 上次自动备份的时间戳
+    goals: { water: 6, move: 5, eye: 8 },   // 每日健康目标：杯 / 次 / 次
     // 目录绝对路径：浏览器 FSA 只能拿到文件夹名，拿不到路径，需要手动填写
     dirPaths: { work: '', know: '', runtime: '' }
   }
