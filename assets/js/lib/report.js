@@ -78,7 +78,7 @@ export function build(kind = 'week') {
   const up = M.upcoming(7);
   const projects = (d.projects || []).map(p => ({
     name: p.name, pct: M.progress(p), total: (p.tasks || []).length,
-    done: (p.tasks || []).filter(t => t.done).length
+    done: (p.tasks || []).filter(t => M.isDone(t)).length     // 口径要和 progress 一致
   }));
 
   const out = [];
