@@ -27,6 +27,9 @@ export function mount(root) {
   const d = store.load().health;
   const log = H.logOf(today());
   const G = H.goals();
+  const pausedUntil = Number(store.load().health.settings.pausedUntil) || 0;
+  const paused = pausedUntil > Date.now();
+  const pauseText = paused ? new Date(pausedUntil).toLocaleString('zh-CN') + ' 恢复' : '';
 
   root.innerHTML = `
     <div class="grid grid-2">
@@ -68,6 +71,12 @@ export function mount(root) {
           <input type="checkbox" id="hEnable" ${d.settings.enabled === false ? '' : 'checked'} style="width:auto;margin-right:6px">
           开启健康提醒（关掉后所有计时暂停）
         </label>
+        <div class="row wrap mt12">
+          <button class="btn sm" id="hPause1">暂停 1 小时</button>
+          <button class="btn sm" id="hPauseToday">暂停到今天结束</button>
+          ${paused ? '<button class="btn sm green" id="hResume">恢复提醒</button>' : ''}
+        </div>
+        ${paused ? `<div class="hint mt6">已暂停，${esc(pauseText)}</div>` : ''}
       </div>
     </div>
 
@@ -134,6 +143,22 @@ export function mount(root) {
       }
     });
   });
+  const setPause = (until, msg) => {
+    store.update(d => { d.health.settings.pausedUntil = until; });
+    toast(msg, 'ok');
+    mount(root);
+  };
+  const bp1 = root.querySelector('#hPause1');
+  if (bp1) bp1.addEventListener('click', () => setPause(Date.now() + 3600 * 1000, '已暂停 1 小时'));
+  const bpt = root.querySelector('#hPauseToday');
+  if (bpt) bpt.addEventListener('click', () => {
+    const d = new Date();
+    d.setHours(23, 59, 59, 999);
+    setPause(d.getTime(), '已暂停到今天结束');
+  });
+  const brs = root.querySelector('#hResume');
+  if (brs) brs.addEventListener('click', () => setPause(0, '已恢复提醒'));
+
   root.querySelector('#hGoals').addEventListener('click', () => {
     modal({
       title: '每日健康目标', okText: '保存',

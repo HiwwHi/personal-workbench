@@ -136,6 +136,7 @@ function fire(rule) {
 function tick() {
   const st = store.load().health.settings || {};
   if (!st.enabled) return;
+  if (st.pausedUntil && Date.now() < Number(st.pausedUntil)) return;   // 临时暂停
   if (Date.now() - lastActive >= IDLE_MS) {
     for (const k of Object.keys(elapsed)) elapsed[k] = Math.max(0, elapsed[k] - TICK_MS / 1000 / 60 * 0.6);
     return;
