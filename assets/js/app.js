@@ -110,6 +110,7 @@ function openPalette() {
   input.value = '';
   input.focus();
   let index = [];
+  let rows = [];
   let cur = 0;
 
   buildIndex().then(items => { index = items; paint(''); });
@@ -117,6 +118,7 @@ function openPalette() {
   function paint(q) {
     const hay = q.toLowerCase();
     const res = index.filter(i => [i.kind, i.title, i.path].join(' ').toLowerCase().includes(hay)).slice(0, 40);
+    rows = res;
     if (!res.length) { list.innerHTML = '<div class="empty">没有匹配项</div>'; return; }
     cur = 0;
     list.innerHTML = res.map((i, n) => `<div class="palette-row ${n === 0 ? 'sel' : ''}" data-n="${n}" data-go="${i.go}" data-slot="${i.slot || ''}">
@@ -125,12 +127,24 @@ function openPalette() {
         <span class="ppath">${esc(i.path)}</span>
       </div>`).join('');
     Array.from(list.children).forEach((el, n) => {
-      el.addEventListener('click', () => {
-        if (res[n].slot) store.setSetting('notesSlot', res[n].slot);
-        location.hash = res[n].go; close();
-      });
+      el.addEventListener('click', () => openResult(n));
       el.addEventListener('mouseenter', () => { cur = n; mark(); });
     });
+  }
+
+  /* 回车和点击走同一条路径：笔记类结果要带上 pendingOpen，落地才会打开那一篇 */
+  function openResult(n) {
+    const i = rows[n];
+    if (!i) return;
+    if (i.slot) {
+      store.setSetting('notesSlot', i.slot);
+      if (String(i.kind).slice(-2) === '笔记') {
+        store.update(d => { d.notesUI.pendingOpen = { slot: i.slot, note: i.path, section: '' }; });
+      }
+    }
+    if (location.hash === i.go) window.dispatchEvent(new Event('hashchange'));
+    else location.hash = i.go;
+    close();
   }
 
   function mark() {
@@ -144,7 +158,7 @@ function openPalette() {
   input.onkeydown = e => {
     if (e.key === 'ArrowDown') { e.preventDefault(); cur = Math.min(cur + 1, list.children.length - 1); mark(); }
     else if (e.key === 'ArrowUp') { e.preventDefault(); cur = Math.max(cur - 1, 0); mark(); }
-    else if (e.key === 'Enter') { e.preventDefault(); if (list.children[cur]) { location.hash = list.children[cur].dataset.go; close(); } }
+    else if (e.key === 'Enter') { e.preventDefault(); openResult(cur); }
     else if (e.key === 'Escape') close();
   };
   $('#paletteMask').onclick = close;
