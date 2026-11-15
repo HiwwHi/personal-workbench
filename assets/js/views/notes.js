@@ -596,12 +596,23 @@ function wire() {
   const root = document.querySelector('#view');
 
   // [[笔记名]] 双链：当前槽位里按名字找，找到就打开，找不到给个提示
-  root.querySelectorAll('.wikilink').forEach(a => a.addEventListener('click', e => {
+  root.querySelectorAll('.wikilink').forEach(a => a.addEventListener('click', async e => {
     e.preventDefault();
     const n = a.dataset.wiki;
-    const f = files.find(x => x.name.replace(/\.md$/i, '') === n || x.path === n);
-    if (f) openFile(f);
-    else toast('当前槽位里没有《' + n + '》，换个槽位或换个写法', 'warn');
+    const hit = () => files.find(x => x.name.replace(/\.md$/i, '') === n || x.path === n);
+    let f = hit();
+    if (!f) {
+      // 本槽位没有就去另一个槽位找，找到就顺手切过去
+      const from = slot;
+      await switchSlot(from === 'work' ? 'know' : 'work');
+      f = hit();
+      if (!f) {
+        await switchSlot(from);
+        toast('两个笔记库里都没有《' + n + '》', 'warn');
+        return;
+      }
+    }
+    openFile(f);
   }));
 
   root.querySelectorAll('[data-slot]').forEach(el => el.addEventListener('click', () => switchSlot(el.dataset.slot)));
