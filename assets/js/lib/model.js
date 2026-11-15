@@ -39,15 +39,28 @@ export function isDone(t, date) {
   return !!t.done;
 }
 
+/* 列表排序：截止日在前，同日高优先级靠前，再按项目名，保证每次都一样 */
+export function byDueThenPriority(a, b) {
+  const ad = a.task.due || '9999-12-31';
+  const bd = b.task.due || '9999-12-31';
+  if (ad !== bd) return ad.localeCompare(bd);
+  const ap = a.task.priority === 'high' ? 0 : 1;
+  const bp = b.task.priority === 'high' ? 0 : 1;
+  if (ap !== bp) return ap - bp;
+  return String(a.project.name || '').localeCompare(String(b.project.name || ''));
+}
+
 export function dueToday() {
   const t = today();
-  return allTasks().filter(x => !isDone(x.task, t) && !restsOn(x.task, t) && x.task.due && x.task.due <= t);
+  return allTasks().filter(x => !isDone(x.task, t) && !restsOn(x.task, t) && x.task.due && x.task.due <= t)
+    .sort(byDueThenPriority);
 }
 
 export function overdue() {
   const t = today();
   // 重复任务按周期滚，不算逾期（否则每日任务第二天就永远是红的）
-  return allTasks().filter(x => x.task.repeat === 'none' && !isDone(x.task, t) && x.task.due && x.task.due < t);
+  return allTasks().filter(x => x.task.repeat === 'none' && !isDone(x.task, t) && x.task.due && x.task.due < t)
+    .sort(byDueThenPriority);
 }
 
 export function noDue() {
@@ -57,7 +70,7 @@ export function noDue() {
 export function upcoming(days = 7) {
   const t = today(), end = dateAdd(days);
   return allTasks().filter(x => !isDone(x.task, t) && !restsOn(x.task, x.task.due) && x.task.due && x.task.due > t && x.task.due <= end)
-    .sort((a, b) => a.task.due.localeCompare(b.task.due));
+    .sort(byDueThenPriority);
 }
 
 export function historyOn(date) {
