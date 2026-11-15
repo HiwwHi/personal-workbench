@@ -17,6 +17,7 @@ const DEFAULT = {
   settings: {
     clipboardClear: 15,
     theme: 'chenwu',
+    themeAuto: false,      // 跟随系统深浅色（开着时忽略 theme）
     homeHealth: false,     // 首页默认不显示健康环，避免被同事看到
     homeStudy: true,
     homeNotes: true,

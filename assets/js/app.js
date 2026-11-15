@@ -153,8 +153,9 @@ function openPalette() {
 
 function boot() {
   const st = store.settings();
-  const tid = system.applyTheme(st.theme);
+  const tid = system.applyTheme(system.effectiveTheme());
   system.applyAccent(st.accent, tid);
+  system.watchSystemTheme();          // 跟随系统模式：系统切深浅色时自动换主题
   document.body.classList.toggle('privacy-on', !!st.privacy);
   ai.registerRoots().catch(() => {});  // 异步告知本地服务信任根目录，用于后续一键用 Cursor / VSCode 打开
   autobackup.setup();                  // 数据变动后自动备份到「中间文件目录/备份/json/」

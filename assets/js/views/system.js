@@ -25,6 +25,35 @@ export const THEMES = [
 
 export const THEME_GROUPS = ['恬淡', '清朗', '夜间'];
 
+/* 跟随系统时用哪套：浅色晨雾、深色夜航 */
+export const AUTO_THEME = { light: 'chenwu', dark: 'yehang' };
+
+export function systemPrefersDark() {
+  return !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+}
+
+/* 实际生效的主题：跟随系统时忽略 settings.theme */
+export function effectiveTheme() {
+  const st = store.settings();
+  if (!st.themeAuto) return st.theme;
+  return systemPrefersDark() ? AUTO_THEME.dark : AUTO_THEME.light;
+}
+
+let mqBound = false;
+/* 系统切深浅色时跟着换（只在跟随系统模式下生效） */
+export function watchSystemTheme() {
+  if (mqBound || !window.matchMedia) return;
+  mqBound = true;
+  const mq = window.matchMedia('(prefers-color-scheme: dark)');
+  const onChange = () => {
+    if (!store.settings().themeAuto) return;
+    const tid = applyTheme(effectiveTheme());
+    applyAccent(store.settings().accent, tid);
+  };
+  if (mq.addEventListener) mq.addEventListener('change', onChange);
+  else if (mq.addListener) mq.addListener(onChange);
+}
+
 export const ACCENTS = [
   '#2E6E9E', '#4A6F8A', '#2F7A6E', '#3E6B4C', '#7E8A5A', '#A5703C',
   '#BE6058', '#B4655E', '#8B7A8E', '#6A5A93', '#5C7E7B', '#4A4A48'
@@ -303,6 +332,10 @@ export async function mount(root) {
           <div class="card-title">外观主题</div>
           <span class="hint">${THEMES.length} 套 · 恬淡系偏浅、清朗系更明确、夜间系深底</span>
         </div>
+        <label class="row mb12" style="font-size:12.5px;color:var(--text-2);gap:6px">
+          <input type="checkbox" id="swThemeAuto" ${st.themeAuto ? 'checked' : ''} style="width:auto">
+          跟随系统深浅色（浅色用「晨雾」，深色用「夜航」；手动点下面的主题会自动关掉这个）
+        </label>
         ${THEME_GROUPS.map(g => `
           <div class="theme-sec">
             <div class="theme-sec-t">${g}系<span class="hint">${
@@ -511,7 +544,7 @@ export async function mount(root) {
         <div class="kv"><span class="k">目录句柄</span><span class="v">IndexedDB 'wb-notes-fs'</span></div>
         <div class="kv"><span class="k">笔记源</span><span class="v">工作：${esc(workName || '未连接')} ｜ 知识：${esc(knowName || '未连接')}</span></div>
         <div class="kv"><span class="k">中间文件</span><span class="v">${esc(rtName || '未设置')}</span></div>
-        <div class="kv"><span class="k">当前主题</span><span class="v">${(THEMES.find(t => t.id === st.theme) || THEMES[0]).name}</span></div>
+        <div class="kv"><span class="k">当前主题</span><span class="v">${(THEMES.find(t => t.id === effectiveTheme()) || THEMES[0]).name}${st.themeAuto ? '（跟随系统）' : ''}</span></div>
         <div class="kv"><span class="k">浏览器</span><span class="v">${esc(navigator.userAgent.slice(0, 90))}</span></div>
       </div>
 
@@ -538,11 +571,21 @@ function wire(root) {
   root.querySelectorAll('[data-theme]').forEach(el => el.addEventListener('click', () => {
     const id = el.dataset.theme;
     store.setSetting('theme', id);
+    if (store.settings().themeAuto) store.setSetting('themeAuto', false);   // 手选即取消跟随
     applyTheme(id);
     applyAccent(store.load().settings.accent, id);
     mount(root);
     toast('已切换主题', 'ok');
   }));
+
+  const swThemeAuto = root.querySelector('#swThemeAuto');
+  if (swThemeAuto) swThemeAuto.addEventListener('change', () => {
+    store.setSetting('themeAuto', swThemeAuto.checked);
+    const tid = applyTheme(effectiveTheme());
+    applyAccent(store.load().settings.accent, tid);
+    mount(root);
+    toast(swThemeAuto.checked ? '已跟随系统深浅色' : '已改为手动选主题', 'ok');
+  });
 
   root.querySelectorAll('[data-accent]').forEach(el => el.addEventListener('click', () => {
     const c = el.dataset.accent;
