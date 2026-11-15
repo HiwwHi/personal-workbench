@@ -14,8 +14,18 @@ export function allTasks() {
   return out;
 }
 
-export function isDone(t) {
-  if (t.repeat === 'daily' || t.repeat === 'weekly') return t.lastDone === today();
+/* 周一为一周起点，和日历视图的列顺序一致 */
+function weekStart(date) {
+  const d = new Date(date + 'T00:00:00');
+  const dow = d.getDay() === 0 ? 7 : d.getDay();
+  return dateAdd(-(dow - 1), date);
+}
+
+/* date 默认今天：传了日期就按那天判断（日历视图要靠它显示正确勾选态） */
+export function isDone(t, date) {
+  const d = typeof date === 'string' && date ? date : today();
+  if (t.repeat === 'daily') return t.lastDone === d;
+  if (t.repeat === 'weekly') return !!t.lastDone && weekStart(t.lastDone) === weekStart(d);
   return !!t.done;
 }
 
@@ -26,7 +36,8 @@ export function dueToday() {
 
 export function overdue() {
   const t = today();
-  return allTasks().filter(x => !isDone(x.task) && x.task.due && x.task.due < t);
+  // 重复任务按周期滚，不算逾期（否则每日任务第二天就永远是红的）
+  return allTasks().filter(x => !isDone(x.task) && x.task.repeat !== 'weekly' && x.task.repeat !== 'daily' && x.task.due && x.task.due < t);
 }
 
 export function noDue() {
@@ -49,22 +60,26 @@ export function historyOn(date) {
   return out;
 }
 
-export function toggleTask(projectId, taskId) {
-  const t = today();
-  store.update(d => {
-    const p = d.projects.find(x => x.id === projectId);
+/* date 默认今天；日历视图点某天要记在那一天，不能都算到今天 */
+export function toggleTask(projectId, taskId, date) {
+  const d = typeof date === 'string' && date ? date : today();
+  store.update(st => {
+    const p = st.projects.find(x => x.id === projectId);
     if (!p) return;
     const task = (p.tasks || []).find(x => x.id === taskId);
     if (!task) return;
     task.history = task.history || [];
-    if (isDone(task)) {
+    if (isDone(task, d)) {
       if (task.repeat === 'none') { task.done = false; task.doneAt = null; }
       task.lastDone = null;
-      task.history = task.history.filter(h => (typeof h === 'string' ? h : h.date) !== t);
+      task.history = task.history.filter(h => {
+        const hd = typeof h === 'string' ? h : h.date;
+        return task.repeat === 'weekly' ? weekStart(hd) !== weekStart(d) : hd !== d;
+      });
     } else {
-      if (task.repeat === 'none') { task.done = true; task.doneAt = new Date().toISOString(); }
-      task.lastDone = t;
-      task.history.push({ date: t, at: new Date().toISOString() });
+      if (task.repeat === 'none') { task.done = true; task.doneAt = new Date(d + 'T12:00:00').toISOString(); }
+      task.lastDone = d;
+      task.history.push({ date: d, at: new Date().toISOString() });
     }
   });
 }
@@ -72,7 +87,7 @@ export function toggleTask(projectId, taskId) {
 export function progress(p) {
   const ts = p.tasks || [];
   if (!ts.length) return 0;
-  return Math.round(ts.filter(isDone).length / ts.length * 100);
+  return Math.round(ts.filter(t => isDone(t)).length / ts.length * 100);
 }
 
 export function weeklyDone() {

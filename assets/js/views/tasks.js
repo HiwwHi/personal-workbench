@@ -121,17 +121,21 @@ function editTask(projectId, taskId, defaultDue, done) {
   });
 }
 
-function taskRow(x, showPrj = true) {
+/* forDate：日历视图传入那一天，勾选态与逾期判定都按那天算 */
+function taskRow(x, showPrj = true, forDate = '') {
   const t = x.task;
-  const overNow = t.due && t.due < today() && !M.isDone(t);
+  const date = forDate || today();
+  const done = M.isDone(t, date);
+  const rep = t.repeat === 'weekly' ? ' · 每周重复' : t.repeat === 'daily' ? ' · 每日重复' : '';
+  const overNow = t.repeat === 'none' && t.due && t.due < date && !done;
   return `<div class="list-item">
-    <i class="check ${M.isDone(t) ? 'on' : ''}" data-prj="${x.project.id}" data-task="${t.id}"></i>
+    <i class="check ${done ? 'on' : ''}" data-prj="${x.project.id}" data-task="${t.id}"${forDate ? ` data-date="${forDate}"` : ''}></i>
     <div class="grow">
-      <div class="${M.isDone(t) ? 'done-text' : ''}">${t.priority === 'high' ? '<span class="tag red">重要</span> ' : ''}${esc(t.title)}</div>
+      <div class="${done ? 'done-text' : ''}">${t.priority === 'high' ? '<span class="tag red">重要</span> ' : ''}${esc(t.title)}</div>
       <div class="hint">
         ${showPrj ? esc(x.project.name) + ' · ' : ''}${x.module ? esc(x.module.name) + ' · 对接 ' + (x.module.owner ? esc(x.module.owner) : '未指定') : '未指定模块'}
         ${t.due ? ' · ' + esc(relDate(t.due)) : ' · 待安排'}
-        ${t.repeat !== 'none' ? ' · 每日重复' : ''}
+        ${rep}
         ${overNow ? ' · <span style="color:var(--red)">已逾期</span>' : ''}
       </div>
     </div>
@@ -223,12 +227,12 @@ export function mount(root) {
       <div class="grid grid-2">
         <div class="card">
           <div class="card-head"><div class="card-title">${selDate} · 当天已完成（${sel.length}）</div></div>
-          ${sel.length ? sel.map(x => taskRow(x)).join('') : '<div class="empty">这天没有完成记录</div>'}
+          ${sel.length ? sel.map(x => taskRow(x, true, selDate)).join('') : '<div class="empty">这天没有完成记录</div>'}
         </div>
         <div class="card">
           <div class="card-head"><div class="card-title">${selDate} · 到期任务</div>
             <button class="btn sm" data-add="sel">在此日新增</button></div>
-          ${due_sel.length ? due_sel.map(x => taskRow(x)).join('') : '<div class="empty">这天没有到期任务</div>'}
+          ${due_sel.length ? due_sel.map(x => taskRow(x, true, selDate)).join('') : '<div class="empty">这天没有到期任务</div>'}
         </div>
       </div>`;
   }
@@ -255,7 +259,7 @@ export function mount(root) {
           <div class="hint mb8">${p.desc ? esc(p.desc) + ' · ' : ''}${p.owner ? '负责人 ' + esc(p.owner) : ''}${p.due ? ' · 截止 ' + esc(p.due) : ''}</div>
           <div class="progress"><i style="width:${pr}%"></i></div>
           <div class="row-between mt6">
-            <span class="hint">${(p.tasks || []).filter(M.isDone).length}/${(p.tasks || []).length} 项完成</span>
+            <span class="hint">${(p.tasks || []).filter(t => M.isDone(t)).length}/${(p.tasks || []).length} 项完成</span>
             <button class="btn-ghost sm" data-tadd="${p.id}">+ 任务</button>
           </div>
           ${(p.modules || []).length ? `<div class="mt12">${p.modules.map(m => `<span class="tag blue" style="margin:2px 4px 2px 0">${esc(m.name)} · ${esc(m.owner || '未指定')}</span>`).join('')}</div>` : ''}
@@ -272,7 +276,10 @@ export function mount(root) {
   `;
 
   root.querySelectorAll('[data-tab]').forEach(el => el.addEventListener('click', () => { tab = el.dataset.tab; if (tab === 'cal') monthInfo(); mount(root); }));
-  root.querySelectorAll('.check').forEach(c => c.addEventListener('click', () => { M.toggleTask(c.dataset.prj, c.dataset.task); mount(root); }));
+  root.querySelectorAll('.check').forEach(c => c.addEventListener('click', () => {
+    M.toggleTask(c.dataset.prj, c.dataset.task, c.dataset.date || undefined);
+    mount(root);
+  }));
   root.querySelector('#newPrj').addEventListener('click', () => editProject(null, () => mount(root)));
 
   root.querySelectorAll('[data-pedit]').forEach(b => b.addEventListener('click', e => {
