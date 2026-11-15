@@ -1,5 +1,7 @@
 import * as store from '../lib/store.js';
-import { esc, uid, modal, toast, confirmBox, copyText } from '../lib/ui.js';
+import { esc, uid, modal, toast, confirmBox, copyText, today } from '../lib/ui.js';
+
+const INBOX = '收件箱';
 
 export const meta = { key: 'jots', title: '随手记', sub: '想到就记，回车即存' };
 
@@ -18,6 +20,27 @@ function add(text) {
   store.update(d => {
     d.jots.unshift({ id: uid(), text: t, tags: parseTags(t), pinned: false, archived: false, createdAt: new Date().toISOString() });
   });
+}
+
+/* 把一条随手记变成任务：没项目时自动建一个「收件箱」，原记录归档留底 */
+function toTask(j, root) {
+  const title = String(j.text || '').replace(/#[^\s#]{1,12}/g, '').trim().slice(0, 60) || '未命名任务';
+  store.update(d => {
+    let p = d.projects.find(x => x.name === INBOX);
+    if (!p) {
+      p = { id: uid(), name: INBOX, owner: '', due: '', desc: '从随手记转过来的待办先放这里', modules: [], tasks: [], createdAt: today() };
+      d.projects.unshift(p);
+    }
+    p.tasks = p.tasks || [];
+    p.tasks.unshift({
+      id: uid(), title, due: today(), moduleId: '', repeat: 'none', priority: 'normal',
+      done: false, doneAt: null, lastDone: null, history: []
+    });
+    const src = d.jots.find(x => x.id === j.id);
+    if (src) { src.archived = true; src.convertedAt = today(); }
+  });
+  toast('已加入「收件箱」，原记录已归档', 'ok');
+  mount(root);
 }
 
 function timeAgo(iso) {
@@ -67,6 +90,7 @@ export function mount(root) {
           <div class="jm">
             <span>${timeAgo(j.createdAt)}</span>
             <button class="btn-ghost sm" data-act="copy">复制</button>
+            <button class="btn-ghost sm" data-act="task" title="复制成一条任务，放到「收件箱」项目里">转任务</button>
             <button class="btn-ghost sm" data-act="pin">${j.pinned ? '取消置顶' : '置顶'}</button>
             <button class="btn-ghost sm" data-act="arc">${j.archived ? '恢复' : '归档'}</button>
             <button class="btn-ghost sm" data-act="del">删除</button>
@@ -98,6 +122,8 @@ export function mount(root) {
           toast(ok ? '已复制' : '复制失败', ok ? 'ok' : 'warn');
           break;
         }
+        case 'task':
+          toTask(j, root); break;
         case 'pin':
           store.update(d => { d.jots.find(x => x.id === j.id).pinned = !j.pinned; });
           mount(root); break;
