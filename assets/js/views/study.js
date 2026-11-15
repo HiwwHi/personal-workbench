@@ -92,7 +92,9 @@ export function mount(root) {
   for (let i = 0; i < 400; i++) {
     const d = dateAdd(-i);
     const any = list.some(s => (s.checkins || {})[d]);
-    if (any) streak++; else break;
+    if (any) { streak++; continue; }
+    if (i === 0) continue;     // 今天还没打卡不算断签，从昨天往前数
+    break;
   }
 
   root.innerHTML = `
