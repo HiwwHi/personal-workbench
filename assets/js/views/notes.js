@@ -27,6 +27,9 @@ const sanitize = s => String(s)
   .replace(/^[. ]+|[. ]+$/g, '')
   .slice(0, 60) || 'note';
 
+/* 内置库以「槽位 + 名字」定位：两个槽位可以各有一篇同名笔记，不能互相覆盖 */
+const memHit = (x, f) => (x.slot || 'work') === slot && x.name === f.path;
+
 const mem = {
   key: 'mem',
   label: '内置笔记库',
@@ -35,24 +38,31 @@ const mem = {
       .map(d => ({ name: d.name, path: d.name, _mem: true }));
   },
   async read(f) {
-    const d = (store.load().notesDocs || []).find(x => x.name === f.path);
+    const d = (store.load().notesDocs || []).find(x => memHit(x, f));
     return { text: d ? d.content : '', modified: 0 };
   },
   async save(f, content) {
     store.update(d => {
-      const x = (d.notesDocs || []).find(y => y.name === f.path);
+      const x = (d.notesDocs || []).find(y => memHit(y, f));
       if (x) x.content = content;
     });
     return { ok: true, modified: 0 };
   },
   async create(name, content) {
+    let finalName = name;
     store.update(d => {
       d.notesDocs = d.notesDocs || [];
-      d.notesDocs.unshift({ id: uid(), name, slot, content: content || '# ' + name + '\n\n' });
+      // 同一槽位重名就自动加序号，避免两条同名笔记互相打架
+      let i = 2;
+      while (d.notesDocs.some(x => (x.slot || 'work') === slot && x.name === finalName)) {
+        finalName = name + ' (' + (i++) + ')';
+      }
+      d.notesDocs.unshift({ id: uid(), name: finalName, slot, content: content || '# ' + finalName + '\n\n' });
     });
+    return finalName;
   },
   async trash(f) {
-    store.update(d => { d.notesDocs = (d.notesDocs || []).filter(x => x.name !== f.path); });
+    store.update(d => { d.notesDocs = (d.notesDocs || []).filter(x => !memHit(x, f)); });
   }
 };
 
