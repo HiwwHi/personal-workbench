@@ -55,7 +55,7 @@ export function mount(root) {
             <div>${esc(x.task.title)}</div>
             <div class="hint">${esc(x.project.name)}${x.module ? ' · ' + esc(x.module.name) : ''}
               ${x.task.repeat === 'none' && x.task.due && x.task.due < t ? ` · <span style="color:var(--red)">逾期 ${esc(x.task.due.slice(5))}</span>` : ''}
-              ${x.task.repeat === 'weekly' ? ' · 每周' : x.task.repeat === 'daily' ? ' · 每日' : ''}
+              ${x.task.repeat === 'weekly' ? ' · 每周' : x.task.repeat === 'weekday' ? ' · 工作日' : x.task.repeat === 'daily' ? ' · 每日' : ''}
             </div>
           </div>
         </div>`).join('') : '<div class="empty">今天没有安排，清清爽爽 ✦</div>'}

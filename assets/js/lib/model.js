@@ -21,23 +21,33 @@ function weekStart(date) {
   return dateAdd(-(dow - 1), date);
 }
 
+const isWeekend = date => {
+  const w = new Date(date + 'T00:00:00').getDay();
+  return w === 0 || w === 6;
+};
+
+/* 工作日任务在周末不出现（不算没做完） */
+function restsOn(t, date) {
+  return t.repeat === 'weekday' && isWeekend(date);
+}
+
 /* date 默认今天：传了日期就按那天判断（日历视图要靠它显示正确勾选态） */
 export function isDone(t, date) {
   const d = typeof date === 'string' && date ? date : today();
-  if (t.repeat === 'daily') return t.lastDone === d;
+  if (t.repeat === 'daily' || t.repeat === 'weekday') return t.lastDone === d;
   if (t.repeat === 'weekly') return !!t.lastDone && weekStart(t.lastDone) === weekStart(d);
   return !!t.done;
 }
 
 export function dueToday() {
   const t = today();
-  return allTasks().filter(x => !isDone(x.task) && x.task.due && x.task.due <= t);
+  return allTasks().filter(x => !isDone(x.task, t) && !restsOn(x.task, t) && x.task.due && x.task.due <= t);
 }
 
 export function overdue() {
   const t = today();
   // 重复任务按周期滚，不算逾期（否则每日任务第二天就永远是红的）
-  return allTasks().filter(x => !isDone(x.task) && x.task.repeat !== 'weekly' && x.task.repeat !== 'daily' && x.task.due && x.task.due < t);
+  return allTasks().filter(x => x.task.repeat === 'none' && !isDone(x.task, t) && x.task.due && x.task.due < t);
 }
 
 export function noDue() {
@@ -46,7 +56,7 @@ export function noDue() {
 
 export function upcoming(days = 7) {
   const t = today(), end = dateAdd(days);
-  return allTasks().filter(x => !isDone(x.task) && x.task.due && x.task.due > t && x.task.due <= end)
+  return allTasks().filter(x => !isDone(x.task, t) && !restsOn(x.task, x.task.due) && x.task.due && x.task.due > t && x.task.due <= end)
     .sort((a, b) => a.task.due.localeCompare(b.task.due));
 }
 

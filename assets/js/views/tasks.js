@@ -73,6 +73,7 @@ function taskForm(projectId, t) {
         <select data-f="repeat">
           <option value="none" ${t.repeat === 'none' || !t.repeat ? 'selected' : ''}>不重复</option>
           <option value="daily" ${t.repeat === 'daily' ? 'selected' : ''}>每日任务</option>
+          <option value="weekday" ${t.repeat === 'weekday' ? 'selected' : ''}>每个工作日</option>
           <option value="weekly" ${t.repeat === 'weekly' ? 'selected' : ''}>每周任务</option>
         </select>
       </label>
@@ -126,7 +127,9 @@ function taskRow(x, showPrj = true, forDate = '') {
   const t = x.task;
   const date = forDate || today();
   const done = M.isDone(t, date);
-  const rep = t.repeat === 'weekly' ? ' · 每周重复' : t.repeat === 'daily' ? ' · 每日重复' : '';
+  const rep = t.repeat === 'weekly' ? ' · 每周重复'
+    : t.repeat === 'weekday' ? ' · 每个工作日'
+      : t.repeat === 'daily' ? ' · 每日重复' : '';
   const overNow = t.repeat === 'none' && t.due && t.due < date && !done;
   return `<div class="list-item">
     <i class="check ${done ? 'on' : ''}" data-prj="${x.project.id}" data-task="${t.id}"${forDate ? ` data-date="${forDate}"` : ''}></i>
