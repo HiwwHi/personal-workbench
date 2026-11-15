@@ -7,6 +7,7 @@ export const meta = { key: 'jots', title: '随手记', sub: '想到就记，回�
 
 let q = '';
 let showArchived = false;
+let tagFilter = '';
 
 function jots() { return store.load().jots; }
 
@@ -57,9 +58,12 @@ function timeAgo(iso) {
 
 export function mount(root) {
   const all = jots().filter(j => !!j.archived === showArchived);
-  const list = q
-    ? all.filter(j => String(j.text || '').toLowerCase().includes(q.toLowerCase()))
-    : all;
+  const tags = Array.from(new Set(all.flatMap(j => j.tags || []))).sort();
+  if (tagFilter && !tags.includes(tagFilter)) tagFilter = '';
+  const kw = q.toLowerCase();
+  const list = all.filter(j =>
+    (!tagFilter || (j.tags || []).includes(tagFilter)) &&
+    (!kw || String(j.text || '').toLowerCase().includes(kw)));
   const sorted = list.slice().sort((a, b) =>
     ((b.pinned ? 1 : 0) - (a.pinned ? 1 : 0)) ||
     String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
@@ -81,6 +85,12 @@ export function mount(root) {
         <button class="btn sm" id="jtoggle">${showArchived ? '回到记录' : '查看归档（' + jots().filter(j => j.archived).length + '）'}</button>
       </div>
     </div>
+
+    ${tags.length ? `<div class="row wrap mb12" style="gap:6px">
+      <span class="hint">标签：</span>
+      ${tags.map(t => `<span class="tag ${tagFilter === t ? 'blue' : ''}" data-tag="${esc(t)}" style="cursor:pointer">#${esc(t)}</span>`).join('')}
+      ${tagFilter ? '<span class="hint" data-tag="" style="cursor:pointer">清除筛选</span>' : ''}
+    </div>` : ''}
 
     ${sorted.length ? `<div class="grid grid-cards">${sorted.map(j => `
       <div class="jot-card" data-id="${j.id}">
@@ -110,6 +120,10 @@ export function mount(root) {
   const jq = root.querySelector('#jq');
   jq.addEventListener('input', () => { q = jq.value; mount(root); const n = root.querySelector('#jq'); n.focus(); n.setSelectionRange(q.length, q.length); });
   root.querySelector('#jtoggle').addEventListener('click', () => { showArchived = !showArchived; mount(root); });
+  root.querySelectorAll('[data-tag]').forEach(el => el.addEventListener('click', () => {
+    tagFilter = el.dataset.tag || '';
+    mount(root);
+  }));
 
   root.querySelectorAll('.jot-card').forEach(card => {
     card.addEventListener('click', async e => {
