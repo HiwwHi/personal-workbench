@@ -1,5 +1,6 @@
 const { app, BrowserWindow, Tray, Menu, nativeImage, shell, dialog, ipcMain } = require('electron');
 const path = require('path');
+const fs = require('fs');
 const { startServer } = require('../server.js');
 
 const DEFAULT_PORT = 8733;
@@ -79,10 +80,30 @@ function openUI() {
   createTray();
 }
 
+/* 记住窗口大小与位置：下次打开在原处，不用每次拖 */
+let stateFile = '';
+function loadWinState() {
+  try { return JSON.parse(fs.readFileSync(stateFile, 'utf8')); } catch { return null; }
+}
+function saveWinState() {
+  try {
+    if (!win || win.isDestroyed() || win.isMinimized()) return;
+    const b = win.getNormalBounds();
+    fs.writeFileSync(stateFile, JSON.stringify({ ...b, maximized: win.isMaximized() }), 'utf8');
+  } catch { /* 记不住也不影响使用 */ }
+}
+
 function createWindow() {
+  stateFile = path.join(app.getPath('userData'), 'window-state.json');
+  const saved = loadWinState();
+  // 只有尺寸合理才采用，防止上次是在小屏/异屏留下的怪值
+  const useSaved = saved && saved.width >= 960 && saved.height >= 600;
+
   win = new BrowserWindow({
-    width: 1280,
-    height: 820,
+    width: useSaved ? saved.width : 1280,
+    height: useSaved ? saved.height : 820,
+    x: useSaved ? saved.x : undefined,
+    y: useSaved ? saved.y : undefined,
     minWidth: 960,
     minHeight: 600,
     icon: path.join(ROOT, 'app.ico'),
@@ -118,6 +139,14 @@ function createWindow() {
     e.preventDefault();
     if (isSafeExternal(url)) shell.openExternal(url);
   });
+
+  // 拖拽/缩放时防抖保存（关窗再存的话，强制结束进程就丢了）
+  let saveTimer = null;
+  const queueSave = () => { clearTimeout(saveTimer); saveTimer = setTimeout(saveWinState, 600); };
+  win.once('ready-to-show', queueSave);
+  win.on('resize', queueSave);
+  win.on('move', queueSave);
+  win.on('close', saveWinState);
 
   win.on('closed', () => { win = null; });
 }
