@@ -18,6 +18,45 @@ function pwdAge(v) {
   return days;
 }
 
+/* 安全检查：只在本地算，不外传。阈值故意保守，只提示明显有问题的 */
+const WEAK_MIN = 8;
+const OLD_DAYS = 180;
+
+function weakReason(pwd) {
+  const s = String(pwd || '');
+  if (!s) return '';
+  if (s.length < WEAK_MIN) return '太短';
+  if (/^\d+$/.test(s)) return '纯数字';
+  if (/^[a-zA-Z]+$/.test(s)) return '纯字母';
+  if (new Set(s).size <= 2) return '字符单一';
+  return '';
+}
+
+function analyze(list) {
+  const byPwd = new Map();
+  for (const v of list) {
+    const p = String(v.password || '');
+    if (!p) continue;
+    if (!byPwd.has(p)) byPwd.set(p, []);
+    byPwd.get(p).push(v.id);
+  }
+  const dupIds = new Set();
+  for (const ids of byPwd.values()) if (ids.length > 1) ids.forEach(id => dupIds.add(id));
+
+  const issues = new Map();
+  let weak = 0, dup = 0, old = 0;
+  for (const v of list) {
+    const arr = [];
+    const w = weakReason(v.password);
+    if (w) { arr.push({ text: '弱·' + w, cls: 'red' }); weak++; }
+    if (dupIds.has(v.id)) { arr.push({ text: '重复使用', cls: 'red' }); dup++; }
+    const age = pwdAge(v);
+    if (age !== null && age > OLD_DAYS) { arr.push({ text: age + ' 天未换', cls: 'amber' }); old++; }
+    if (arr.length) issues.set(v.id, arr);
+  }
+  return { issues, weak, dup, old };
+}
+
 function formHTML(v) {
   v = v || {};
   return `
@@ -45,8 +84,14 @@ function editEntry(id, done) {
       const data = { title: g('title'), group: g('group') || '未分组', account: g('account'), password: g('password'), url: g('url'), note: g('note') };
       store.update(d => {
         const target = v ? d.vault.find(x => x.id === id) : null;
-        if (target) Object.assign(target, data, { updatedAt: today() });
-        else if (!v) d.vault.unshift(Object.assign({ id: uid(), createdAt: today(), pwdChangedAt: today() }, data));
+        if (target) {
+          const pwdChanged = String(v.password || '') !== data.password;
+          Object.assign(target, data, { updatedAt: today() });
+          // 改了密码就重置「多少天未换」，否则这个提示永远消不掉
+          if (pwdChanged) target.pwdChangedAt = today();
+        } else if (!v) {
+          d.vault.unshift(Object.assign({ id: uid(), createdAt: today(), pwdChangedAt: today() }, data));
+        }
       });
       toast(v ? '已更新' : '已添加', 'ok');
       return true;
@@ -54,12 +99,16 @@ function editEntry(id, done) {
   });
 }
 
-function cardHTML(v, reveal) {
+function cardHTML(v, reveal, issues) {
   const age = pwdAge(v);
+  const marks = issues.get(v.id) || [];
   return `<div class="vault-card" data-id="${v.id}">
     <div class="row-between">
       <div class="vtitle">${esc(v.title)}</div>
-      <span class="tag ${age && age > 180 ? 'amber' : 'blue'}">${esc(v.group || '未分组')}</span>
+      <span class="row" style="gap:4px">
+        ${marks.map(m => `<span class="tag ${m.cls}">${esc(m.text)}</span>`).join('')}
+        <span class="tag ${age && age > OLD_DAYS ? 'amber' : 'blue'}">${esc(v.group || '未分组')}</span>
+      </span>
     </div>
     <div class="vault-field"><span class="k">账号</span><span class="v">${esc(v.account || '—')}</span>
       <button class="icon-btn" data-act="copy-acc" title="复制账号"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M15 5H6a1 1 0 0 0-1 1v9"/></svg></button>
@@ -86,6 +135,8 @@ let bound = false;
 export function mount(root) {
   const all = items();
   const gps = groups();
+  const chk = analyze(all);
+  const flagTotal = chk.weak + chk.dup + chk.old;
   const list = all.filter(v => {
     if (filter.group !== '全部' && (v.group || '未分组') !== filter.group) return false;
     if (!filter.q) return true;
@@ -103,7 +154,10 @@ export function mount(root) {
         <button class="btn primary" id="vadd"><svg viewBox="0 0 24 24" class="mini"><path d="M12 5v14M5 12h14"/></svg>新增条目</button>
       </div>
     </div>
-    ${list.length ? `<div class="grid grid-cards">${list.map(v => cardHTML(v, reveal)).join('')}</div>`
+    ${all.length ? `<div class="hint mb12">安全检查：${flagTotal
+      ? `<b>${chk.weak}</b> 个弱密码 · <b>${chk.dup}</b> 个重复使用 · <b>${chk.old}</b> 个超过 ${OLD_DAYS} 天未改`
+      : '没发现明显问题（弱密码 / 重复使用 / 长期未换）'}</div>` : ''}
+    ${list.length ? `<div class="grid grid-cards">${list.map(v => cardHTML(v, reveal, chk.issues)).join('')}</div>`
       : `<div class="card"><div class="empty">${all.length ? '没有匹配的条目' : '还没有保存任何账号，点右上角新增'}</div></div>`}
     <div class="hint mt12">密码在本机明文存储、默认打码显示。点「保存备份」导出的 JSON 里密码同样是明文，请妥善保管。</div>
   `;
