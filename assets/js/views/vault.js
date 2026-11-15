@@ -57,6 +57,23 @@ function analyze(list) {
   return { issues, weak, dup, old };
 }
 
+/* 生成强密码：四类字符各抽一个再洗牌，避免出现纯字母/纯数字 */
+function genPassword(len = 16) {
+  const lower = 'abcdefghijkmnopqrstuvwxyz';
+  const upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+  const num = '23456789';
+  const sym = '!@#$%^&*-_=+';
+  const all = lower + upper + num + sym;
+  const rnd = n => crypto.getRandomValues(new Uint32Array(1))[0] % n;
+  const arr = [lower[rnd(lower.length)], upper[rnd(upper.length)], num[rnd(num.length)], sym[rnd(sym.length)]];
+  while (arr.length < len) arr.push(all[rnd(all.length)]);
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = rnd(i + 1);
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr.join('');
+}
+
 function formHTML(v) {
   v = v || {};
   return `
@@ -64,7 +81,12 @@ function formHTML(v) {
     <label class="field"><span>分组</span><input type="text" data-f="group" value="${esc(v.group || '')}" placeholder="例：设备 / 服务器 / 后台"></label>
     <div class="grid grid-2">
       <label class="field"><span>账号</span><input type="text" data-f="account" value="${esc(v.account || '')}"></label>
-      <label class="field"><span>密码</span><input type="text" data-f="password" value="${esc(v.password || '')}"></label>
+      <label class="field"><span>密码</span>
+        <div class="row">
+          <input class="grow" type="text" data-f="password" value="${esc(v.password || '')}">
+          <button type="button" class="btn sm" data-genpwd="1" title="生成 16 位随机密码">生成</button>
+        </div>
+      </label>
     </div>
     <label class="field"><span>地址 / IP</span><input type="text" data-f="url" value="${esc(v.url || '')}"></label>
     <label class="field"><span>备注</span><textarea rows="2" data-f="note" placeholder="端口、默认网关、注意事项…">${esc(v.note || '')}</textarea></label>
@@ -73,7 +95,7 @@ function formHTML(v) {
 
 function editEntry(id, done) {
   const v = items().find(x => x.id === id);
-  modal({
+  const m = modal({
     title: v ? '编辑条目' : '新增条目',
     body: formHTML(v),
     okText: '保存',
@@ -96,6 +118,12 @@ function editEntry(id, done) {
       toast(v ? '已更新' : '已添加', 'ok');
       return true;
     }
+  });
+
+  const gen = m.body.querySelector('[data-genpwd]');
+  if (gen) gen.addEventListener('click', () => {
+    m.body.querySelector('[data-f="password"]').value = genPassword();
+    toast('已生成 16 位随机密码，记得保存', 'ok');
   });
 }
 
