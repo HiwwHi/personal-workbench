@@ -327,13 +327,22 @@ function newNote() {
     onOk(body) {
       const n = body.querySelector('[data-f="name"]').value.trim();
       if (!n) { toast('请填写文件名', 'warn'); return false; }
-      return (async () => {
-        await source.create(n, '# ' + n + '\n\n## 第一节\n\n');
-        await loadFiles();
-        const f = files.find(x => x.name === sanitize(n) + '.md' || x.name === n + '.md' || x.path === n);
-        await openFile(f || files[0]);
-        toast('已创建', 'ok');
-      })(), true;
+      // 同名文件已存在就留在弹窗里让用户改名，别把磁盘上的原笔记截断
+      const want = (sanitize(n) + '.md').toLowerCase();
+      if (files.some(f => String(f.name).toLowerCase() === want)) {
+        toast('这个名字已经存在，换一个吧', 'warn');
+        return false;
+      }
+      (async () => {
+        try {
+          await source.create(n, '# ' + n + '\n\n## 第一节\n\n');
+          await loadFiles();
+          const f = files.find(x => x.name === sanitize(n) + '.md' || x.name === n + '.md' || x.path === n);
+          await openFile(f || files[0]);
+          toast('已创建', 'ok');
+        } catch (e) { toast(e.message || '创建失败', 'warn'); }
+      })();
+      return true;
     }
   }).close;
 }

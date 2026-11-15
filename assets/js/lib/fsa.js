@@ -266,6 +266,13 @@ export async function createFile(slot, parentPath, name, content) {
   if (!root) throw new Error('笔记文件夹未连接');
   let target = root;
   if (parentPath) target = await ensurePath(root, parentPath);
+  // 同名文件已存在就不写：getFileHandle(create) + createWritable 会把原笔记直接截断
+  try {
+    await target.getFileHandle(name);
+    const e = new Error('这个文件名已经存在，换一个吧');
+    e.code = 'EXISTS';
+    throw e;
+  } catch (e) { if (e && e.code === 'EXISTS') throw e; }
   return writeTo(target, name, content);
 }
 
