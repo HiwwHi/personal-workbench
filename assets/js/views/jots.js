@@ -127,9 +127,17 @@ export function mount(root) {
         case 'pin':
           store.update(d => { d.jots.find(x => x.id === j.id).pinned = !j.pinned; });
           mount(root); break;
-        case 'arc':
-          store.update(d => { d.jots.find(x => x.id === j.id).archived = !j.archived; });
-          toast(j.archived ? '已恢复' : '已归档'); mount(root); break;
+        case 'arc': {
+          // 先记下目标状态：store 里的 j 是活引用，翻转后读到的就是新值，提示会反
+          const next = !j.archived;
+          store.update(d => {
+            const x = d.jots.find(y => y.id === j.id);
+            if (x) x.archived = next;
+          });
+          toast(next ? '已归档' : '已恢复');
+          mount(root);
+          break;
+        }
         case 'del':
           if (await confirmBox('删除随手记', '确定删除这条？', '删除')) {
             store.update(d => { d.jots = d.jots.filter(x => x.id !== j.id); });
