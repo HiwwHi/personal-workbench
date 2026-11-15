@@ -89,13 +89,20 @@ async function buildIndex() {
   if (!hide) d.jots.forEach(j => items.push({ kind: '随手记', title: String(j.text || '').slice(0, 40), path: (j.tags || []).join(' '), go: '#/jots' }));
   for (const slot of ['work', 'know']) {
     const label = slot === 'work' ? '流程笔记' : '知识笔记';
+    const cache = store.notesSlotUI(slot).textCache || {};
     if (fsa.supported() && await fsa.restoreDir(slot, { silent: true })) {
       for (const f of await fsa.listFiles(slot)) {
-        items.push({ kind: label, title: f.name.replace(/\.md$/i, ''), path: f.path, go: '#/notes', slot });
+        items.push({
+          kind: label, title: f.name.replace(/\.md$/i, ''), path: f.path, go: '#/notes', slot,
+          body: ((cache[f.path] && cache[f.path].t) || '').toLowerCase()   // 打开过的笔记才能搜正文
+        });
       }
     } else {
       (d.notesDocs || []).filter(n => (n.slot || 'work') === slot).forEach(n => {
-        items.push({ kind: label, title: n.name, path: '内置', go: '#/notes', slot });
+        items.push({
+          kind: label, title: n.name, path: '内置', go: '#/notes', slot,
+          body: String(n.content || '').toLowerCase().slice(0, 20000)
+        });
       });
     }
   }
@@ -124,7 +131,7 @@ function openPalette() {
 
   function paint(q) {
     const hay = q.toLowerCase();
-    const res = index.filter(i => [i.kind, i.title, i.path].join(' ').toLowerCase().includes(hay)).slice(0, 40);
+    const res = index.filter(i => [i.kind, i.title, i.path, i.body || ''].join(' ').toLowerCase().includes(hay)).slice(0, 40);
     rows = res;
     if (!res.length) { list.innerHTML = '<div class="empty">没有匹配项</div>'; return; }
     cur = 0;

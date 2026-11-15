@@ -153,6 +153,16 @@ function draftClear(path) {
   });
 }
 
+/* 正文缓存：只为搜索服务，最多 200 篇、每篇前 2 万字符 */
+function cacheBody(path, body) {
+  const ui = store.notesSlotUI(slot);
+  ui.textCache = ui.textCache || {};
+  ui.textCache[path] = { t: String(body || '').slice(0, 20000), at: Date.now() };
+  const keys = Object.keys(ui.textCache).sort((a, b) => (ui.textCache[b].at || 0) - (ui.textCache[a].at || 0));
+  keys.slice(200).forEach(k => { delete ui.textCache[k]; });
+  store.save();
+}
+
 function bumpRecent(path, section) {
   store.update(() => {
     const s = store.notesSlotUI(slot);
@@ -198,6 +208,7 @@ async function openFile(f, section) {
   mode = 'read';
   focusSec = section || null;
   bumpRecent(f.path, section || '');
+  cacheBody(f.path, text);          // 顺手把正文存进搜索缓存（不读盘也能搜正文）
   render();
   if (section) scrollToHeading(section);
 }
