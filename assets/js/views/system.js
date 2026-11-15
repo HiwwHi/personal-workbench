@@ -519,6 +519,16 @@ export async function mount(root) {
 
         <div class="row-between wrap" style="border-top:1px solid var(--border);margin-top:14px;padding-top:12px">
           <div>
+            <div class="card-title">复制密码后清空剪贴板</div>
+            <div class="hint mt6">单位秒，填 0 表示不清空。默认 15 秒。</div>
+          </div>
+          <div class="row">
+            <input type="number" min="0" max="600" id="clipSec" value="${esc(String(Number(st.clipboardClear) || 0))}" style="width:90px"> 秒
+          </div>
+        </div>
+
+        <div class="row-between wrap" style="border-top:1px solid var(--border);margin-top:14px;padding-top:12px">
+          <div>
             <div class="card-title">自动备份</div>
             <div class="hint mt6">
               数据变动后最多每 10 分钟写一份到「中间文件目录/${esc(autobackup.SUB)}/」，只保留最近 ${autobackup.KEEP} 份。
@@ -786,6 +796,14 @@ function wire(root) {
   if (be) be.addEventListener('click', () => {
     download(`工作台备份-${today()}.json`, store.exportAll(), 'application/json;charset=utf-8');
     toast('已导出备份文件', 'ok');
+  });
+
+  const clipSec = root.querySelector('#clipSec');
+  if (clipSec) clipSec.addEventListener('change', () => {
+    const v = Math.max(0, Math.min(600, Math.round(Number(clipSec.value) || 0)));
+    store.setSetting('clipboardClear', v);
+    clipSec.value = v;
+    toast(v > 0 ? `已设为 ${v} 秒后清空` : '已设为不清空剪贴板', 'ok');
   });
 
   const bnow = root.querySelector('#btnBackupNow');

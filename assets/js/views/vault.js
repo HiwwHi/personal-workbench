@@ -198,13 +198,16 @@ export function mount(root) {
   root.querySelector('#vadd').addEventListener('click', () => editEntry(null, () => mount(root)));
 
   let clearTimer = null;
-  async function smartCopy(text, tip) {
+  async function smartCopy(text, what) {
     const ok = await copyText(text);
     if (!ok) { toast('复制失败，请手动选择', 'warn'); return; }
-    toast(tip, 'ok');
-    const sec = Number(store.load().settings.clipboardClear || 15);
+    const raw = Number(store.load().settings.clipboardClear);
+    const sec = Number.isFinite(raw) ? raw : 15;     // 0 表示不清空
+    toast(sec > 0 ? `${what}已复制，${sec} 秒后自动清空剪贴板` : `${what}已复制`, 'ok');
     if (clearTimer) clearTimeout(clearTimer);
-    clearTimer = setTimeout(() => { navigator.clipboard.writeText('').catch(() => { }); }, sec * 1000);
+    if (sec > 0) {
+      clearTimer = setTimeout(() => { navigator.clipboard.writeText('').catch(() => { }); }, sec * 1000);
+    }
   }
 
   if (!bound) {
@@ -216,8 +219,8 @@ export function mount(root) {
     const v = items().find(x => x.id === card.dataset.id);
     switch (btn.dataset.act) {
       case 'reveal': reveal.has(v.id) ? reveal.delete(v.id) : reveal.add(v.id); mount(root); break;
-      case 'copy-acc': smartCopy(v.account || '', '账号已复制，15 秒后自动清空剪贴板'); break;
-      case 'copy-pwd': smartCopy(v.password || '', '密码已复制，15 秒后自动清空剪贴板'); break;
+      case 'copy-acc': smartCopy(v.account || '', '账号'); break;
+      case 'copy-pwd': smartCopy(v.password || '', '密码'); break;
       case 'edit': editEntry(v.id, () => mount(root)); break;
       case 'del':
         if (await confirmBox('删除条目', `确定删除「${v.title}」？此操作不可撤销。`)) {
