@@ -194,6 +194,11 @@ export function mount(root) {
   `;
 
   const q = root.querySelector('#vq');
+  q.addEventListener('keydown', e => {
+    if (e.key !== 'Escape' || !q.value) return;      // Esc 清空搜索，少点一次全选删除
+    filter.q = '';
+    mount(root);
+  });
   q.addEventListener('input', () => { filter.q = q.value; const p = q.selectionStart; mount(root); const n = root.querySelector('#vq'); n.focus(); n.setSelectionRange(p, p); });
   root.querySelector('#vg').addEventListener('change', e => {
     filter.group = e.target.value;
