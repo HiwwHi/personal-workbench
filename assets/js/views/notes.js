@@ -163,6 +163,38 @@ function cacheBody(path, body) {
   store.save();
 }
 
+/* 反链：用正文缓存 + 内置库内容扫 [[本篇名]]，不额外读盘（没打开过的磁盘笔记扫不到） */
+function backlinksOf() {
+  if (!current) return [];
+  const name = current.name.replace(/\.md$/i, '');
+  const needle = '[[' + name + ']]';
+  const cache = store.notesSlotUI(slot).textCache || {};
+  const mem = (store.load().notesDocs || []).filter(d => (d.slot || 'work') === slot);
+  const out = [];
+  for (const f of files) {
+    if (f.path === current.path) continue;
+    let body = (cache[f.path] && cache[f.path].t) || '';
+    if (!body) {
+      const m = mem.find(x => x.name === f.path);
+      if (m) body = String(m.content || '');
+    }
+    if (body && body.indexOf(needle) >= 0) out.push(f);
+  }
+  return out;
+}
+
+function backlinksHTML() {
+  const bl = backlinksOf();
+  if (!bl.length) return '';
+  return `<div class="card" style="margin-top:12px">
+    <div class="card-head"><div class="card-title">被这些笔记引用（${bl.length}）</div><span class="hint">来自本地正文缓存</span></div>
+    ${bl.map(f => `<div class="list-item" data-back="${esc(f.path)}">
+        <div class="grow">${esc(f.name)}</div>
+        <span class="hint">打开</span>
+      </div>`).join('')}
+  </div>`;
+}
+
 function bumpRecent(path, section) {
   store.update(() => {
     const s = store.notesSlotUI(slot);
@@ -503,7 +535,8 @@ function render() {
                 ${mode === 'edit' ? `
                   <div class="md-toolbar">${mdToolbar()}</div>
                   <textarea class="md-code" id="mdCode" spellcheck="false">${esc(text)}</textarea>
-                ` : `<div class="mdview">${renderSections()}</div>`}
+                ` : `<div class="mdview">${renderSections()}</div>
+                     ${backlinksHTML()}`}
               </div>
             </div>
           </div>
@@ -613,6 +646,11 @@ function wire() {
       }
     }
     openFile(f);
+  }));
+
+  root.querySelectorAll('[data-back]').forEach(el => el.addEventListener('click', () => {
+    const f = files.find(x => x.path === el.dataset.back);
+    if (f) openFile(f);
   }));
 
   root.querySelectorAll('[data-slot]').forEach(el => el.addEventListener('click', () => switchSlot(el.dataset.slot)));
