@@ -3,7 +3,7 @@ import { esc, uid, modal, toast, confirmBox, copyText, today } from '../lib/ui.j
 
 export const meta = { key: 'vault', title: '账号密码', sub: '明文保存在本机，请勿外传备份文件' };
 
-let filter = { group: '全部', q: '' };
+let filter = { group: '', q: '' };   // group 空字符串表示"还没初始化"，挂载时从设置里读
 
 function items() { return store.load().vault; }
 
@@ -163,6 +163,7 @@ let bound = false;
 export function mount(root) {
   const all = items();
   const gps = groups();
+  if (!filter.group) filter.group = store.settings().vaultGroup || '全部';   // 记住上次看的分组
   // 分组被删或改名后，筛选值可能已不存在：不重置的话列表永久空白，下拉却显示「全部」
   if (filter.group !== '全部' && !gps.includes(filter.group)) filter.group = '全部';
   const chk = analyze(all);
@@ -194,7 +195,11 @@ export function mount(root) {
 
   const q = root.querySelector('#vq');
   q.addEventListener('input', () => { filter.q = q.value; const p = q.selectionStart; mount(root); const n = root.querySelector('#vq'); n.focus(); n.setSelectionRange(p, p); });
-  root.querySelector('#vg').addEventListener('change', e => { filter.group = e.target.value; mount(root); });
+  root.querySelector('#vg').addEventListener('change', e => {
+    filter.group = e.target.value;
+    store.setSetting('vaultGroup', filter.group);
+    mount(root);
+  });
   root.querySelector('#vadd').addEventListener('click', () => editEntry(null, () => mount(root)));
 
   let clearTimer = null;
