@@ -423,13 +423,30 @@ function aiMerge() {
   }, 30);
 }
 
+const NOTE_TPL = {
+  blank: n => '# ' + n + '\n\n',
+  meeting: n => '# ' + n + '\n\n## 参会人\n\n## 议题\n\n## 结论\n\n## 待办\n\n- [ ] \n',
+  retro: n => '# ' + n + '\n\n## 背景\n\n## 做对了什么\n\n## 哪里卡住\n\n## 下次怎么改\n',
+  study: n => '# ' + n + '\n\n## 是什么\n\n## 为什么\n\n## 怎么用\n\n## 容易踩的坑\n'
+};
+
 function newNote() {
   modal({
     title: '新建笔记', okText: '创建',
-    body: `<label class="field"><span>文件名（自动补 .md）</span><input type="text" data-f="name" placeholder="例：S7-1200 通信排障笔记"></label>`,
+    body: `<label class="field"><span>文件名（自动补 .md）</span><input type="text" data-f="name" placeholder="例：S7-1200 通信排障笔记"></label>
+      <label class="field"><span>内容模板</span>
+        <select data-f="tpl">
+          <option value="blank">空白</option>
+          <option value="meeting">会议记录</option>
+          <option value="retro">复盘</option>
+          <option value="study">学习笔记</option>
+        </select>
+      </label>`,
     onOk(body) {
       const n = body.querySelector('[data-f="name"]').value.trim();
       if (!n) { toast('请填写文件名', 'warn'); return false; }
+      const tpl = body.querySelector('[data-f="tpl"]').value;
+      const content = (NOTE_TPL[tpl] || NOTE_TPL.blank)(n);
       // 同名文件已存在就留在弹窗里让用户改名，别把磁盘上的原笔记截断
       const want = (sanitize(n) + '.md').toLowerCase();
       if (files.some(f => String(f.name).toLowerCase() === want)) {
@@ -438,7 +455,7 @@ function newNote() {
       }
       (async () => {
         try {
-          await source.create(n, '# ' + n + '\n\n## 第一节\n\n');
+          await source.create(n, content);
           await loadFiles();
           const f = files.find(x => x.name === sanitize(n) + '.md' || x.name === n + '.md' || x.path === n);
           await openFile(f || files[0]);
