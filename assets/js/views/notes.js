@@ -17,6 +17,7 @@ let dirty = false;
 let query = '';
 let focusSec = null;
 let outlineOnly = false;
+let saveKeyBound = false;
 
 const srcKey = () => (source ? source.key : '');
 
@@ -647,6 +648,17 @@ function wire() {
     }
     openFile(f);
   }));
+
+  // Ctrl/Cmd+S 直接保存（wire 每次渲染都会跑，用模块级标记避免重复绑定）
+  if (!saveKeyBound) {
+    saveKeyBound = true;
+    document.addEventListener('keydown', e => {
+      if (!(e.ctrlKey || e.metaKey) || (e.key !== 's' && e.key !== 'S')) return;
+      if (document.querySelector('#mdCode') === null) return;    // 不在编辑模式
+      e.preventDefault();
+      if (dirty) doSave();
+    });
+  }
 
   root.querySelectorAll('[data-back]').forEach(el => el.addEventListener('click', () => {
     const f = files.find(x => x.path === el.dataset.back);
