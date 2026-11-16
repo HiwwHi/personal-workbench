@@ -133,6 +133,7 @@ function openPalette() {
     const hay = q.toLowerCase();
     const res = index.filter(i => [i.kind, i.title, i.path, i.body || ''].join(' ').toLowerCase().includes(hay)).slice(0, 40);
     rows = res;
+    input.placeholder = q ? `搜索（${res.length} 条匹配）` : '搜索任务 / 笔记 / 密码 / Skill…';
     if (!res.length) { list.innerHTML = '<div class="empty">没有匹配项</div>'; return; }
     cur = 0;
     list.innerHTML = res.map((i, n) => `<div class="palette-row ${n === 0 ? 'sel' : ''}" data-n="${n}" data-go="${i.go}" data-slot="${i.slot || ''}">
