@@ -4,7 +4,7 @@ import * as fsa from '../lib/fsa.js';
 import * as mdmod from '../lib/md.js';
 import * as report from '../lib/report.js';
 import * as health from '../lib/health.js';
-import { esc, today, relDate, ring, modal, toast, download } from '../lib/ui.js';
+import { esc, today, relDate, ring, modal, toast, download, dateAdd } from '../lib/ui.js';
 
 export const meta = { key: 'home', title: '首页', sub: '' };
 
@@ -106,6 +106,25 @@ export function mount(root) {
         <div class="hint mt12">最近三次点击最多的章节会出现在这里，点一下直接跳转</div>
       </div>`);
   }
+
+  /* 近 12 周完成热力：每格一天，颜色越深当天完成越多 */
+  const heatCells = (() => {
+    const out = [];
+    for (let i = 83; i >= 0; i--) {
+      const ds = dateAdd(-i);
+      const n = M.historyOn(ds).length;
+      const lv = n === 0 ? 0 : n <= 1 ? 1 : n <= 3 ? 2 : n <= 6 ? 3 : 4;
+      const bg = ['var(--surface-3)', 'rgba(95,143,113,.25)', 'rgba(95,143,113,.45)', 'rgba(95,143,113,.7)', 'var(--green)'][lv];
+      out.push(`<i title="${esc(ds)} · ${n} 项" style="display:block;width:11px;height:11px;border-radius:2px;background:${bg}"></i>`);
+    }
+    return out.join('');
+  })();
+
+  cards.push(`
+    <div class="card">
+      <div class="card-head"><div class="card-title">近 12 周完成情况</div><span class="hint">每格一天，越绿完成越多</span></div>
+      <div style="display:grid;grid-template-columns:repeat(12,11px);gap:3px">${heatCells}</div>
+    </div>`);
 
   cards.push(`
     <div class="card">
