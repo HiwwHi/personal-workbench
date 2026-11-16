@@ -189,7 +189,10 @@ export function mount(root) {
     body = `
       <div class="grid grid-2">
         <div class="card">
-          <div class="card-head"><div class="card-title">今天要做（${todo.length}）</div></div>
+          <div class="card-head">
+            <div class="card-title">今天要做（${todo.length}）</div>
+            ${todo.length ? '<button class="btn-ghost sm" id="doneTodayAll">全部完成</button>' : ''}
+          </div>
           ${todo.length ? todo.map(x => taskRow(x)).join('') : '<div class="empty">今天没有到期任务</div>'}
         </div>
         <div>
@@ -315,6 +318,26 @@ export function mount(root) {
     });
     toast('已清除'); mount(root);
   }));
+
+  const doneAll = root.querySelector('#doneTodayAll');
+  if (doneAll) doneAll.addEventListener('click', async () => {
+    const list = M.dueToday();
+    if (!list.length) return;
+    if (!(await confirmBox('今天全部完成', `把今天到期 / 逾期的 ${list.length} 个任务都标记为完成？`, '全部完成'))) return;
+    const d = today();
+    store.update(st => {
+      for (const x of list) {
+        const pr = st.projects.find(p => p.id === x.project.id);
+        const t = pr && (pr.tasks || []).find(y => y.id === x.task.id);
+        if (!t || M.isDone(t)) continue;
+        t.history = t.history || [];
+        if (t.repeat === 'none') { t.done = true; t.doneAt = new Date(d + 'T12:00:00').toISOString(); }
+        t.lastDone = d;
+        t.history.push({ date: d, at: new Date().toISOString() });
+      }
+    });
+    toast('已全部完成', 'ok'); mount(root);
+  });
 
   root.querySelectorAll('[data-tab]').forEach(el => el.addEventListener('click', () => { tab = el.dataset.tab; if (tab === 'cal') monthInfo(); mount(root); }));
   root.querySelectorAll('.check').forEach(c => c.addEventListener('click', () => {
