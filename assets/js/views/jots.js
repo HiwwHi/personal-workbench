@@ -21,6 +21,7 @@ function add(text) {
   store.update(d => {
     d.jots.unshift({ id: uid(), text: t, tags: parseTags(t), pinned: false, archived: false, createdAt: new Date().toISOString() });
   });
+  tagFilter = '';        // 新记录可能不带当前筛选的标签，清掉以免"记了却看不见"
 }
 
 /* 把一条随手记变成任务：没项目时自动建一个「收件箱」，原记录归档留底 */
