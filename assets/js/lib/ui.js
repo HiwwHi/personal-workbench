@@ -59,7 +59,13 @@ export function modal({ title, body, okText = '确定', onOk, wide = false, canc
       </div></div></div>`);
   const bodyEl = $('.modal-body', mask);
   let closed = false;
-  const close = () => { if (!closed) { closed = true; mask.remove(); } };
+  // 唯一的关闭出口：顺手把 document 上的 Esc 监听摘掉，否则每开一次弹窗就多一个
+  const close = () => {
+    if (closed) return;
+    closed = true;
+    document.removeEventListener('keydown', onKey);
+    mask.remove();
+  };
   mask.addEventListener('click', e => {
     if (e.target === mask) close();
     const a = e.target.closest('[data-a]');
@@ -71,7 +77,7 @@ export function modal({ title, body, okText = '确定', onOk, wide = false, canc
       if (done) done();
     }
   });
-  const onKey = e => { if (e.key === 'Escape') { close(); document.removeEventListener('keydown', onKey); } };
+  const onKey = e => { if (e.key === 'Escape') close(); };
   document.addEventListener('keydown', onKey);
   $('#modalWrap').appendChild(mask);
   const firstInput = mask.querySelector('input,textarea,select');
