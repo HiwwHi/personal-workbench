@@ -132,6 +132,14 @@ function readBody(req) {
     let n = 0;
     let done = false;
     const chunks = [];
+    // 客户端中途断开时 Node 只发 aborted，不 reject 会让 handler 永久挂在这里
+    req.on('aborted', () => {
+      if (done) return;
+      done = true;
+      const e = new Error('请求已中断');
+      e.status = 400;
+      reject(e);
+    });
     req.on('data', c => {
       if (done) return;                    // 超限后丢弃剩余数据，但保留连接以便回 413
       n += c.length;
