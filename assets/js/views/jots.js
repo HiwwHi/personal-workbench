@@ -84,6 +84,7 @@ export function mount(root) {
       </div>
       <div class="row">
         <button class="btn sm" id="jtoggle">${showArchived ? '回到记录' : '查看归档（' + jots().filter(j => j.archived).length + '）'}</button>
+        ${showArchived && jots().filter(j => j.archived).length ? '<button class="btn sm" id="jclear">清空归档</button>' : ''}
       </div>
     </div>
 
@@ -121,6 +122,16 @@ export function mount(root) {
   const jq = root.querySelector('#jq');
   jq.addEventListener('input', () => { q = jq.value; mount(root); const n = root.querySelector('#jq'); n.focus(); n.setSelectionRange(q.length, q.length); });
   root.querySelector('#jtoggle').addEventListener('click', () => { showArchived = !showArchived; mount(root); });
+
+  const jclear = root.querySelector('#jclear');
+  if (jclear) jclear.addEventListener('click', async () => {
+    const n = jots().filter(j => j.archived).length;
+    if (!n) return;
+    if (!(await confirmBox('清空归档', `删除 ${n} 条已归档的随手记？删除后无法恢复。`, '删除'))) return;
+    store.update(d => { d.jots = d.jots.filter(j => !j.archived); });
+    toast('已清空归档');
+    mount(root);
+  });
   root.querySelectorAll('[data-tag]').forEach(el => el.addEventListener('click', () => {
     tagFilter = el.dataset.tag || '';
     mount(root);
