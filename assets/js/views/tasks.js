@@ -131,7 +131,7 @@ function taskRow(x, showPrj = true, forDate = '') {
     : t.repeat === 'weekday' ? ' · 每个工作日'
       : t.repeat === 'daily' ? ' · 每日重复' : '';
   const overNow = t.repeat === 'none' && t.due && t.due < date && !done;
-  return `<div class="list-item">
+  return `<div class="list-item" draggable="true" data-prj="${x.project.id}" data-task="${t.id}" title="可以拖到上面的项目卡片里换项目">
     <i class="check ${done ? 'on' : ''}" data-prj="${x.project.id}" data-task="${t.id}"${forDate ? ` data-date="${forDate}"` : ''}></i>
     <div class="grow">
       <div class="${done ? 'done-text' : ''}">${t.priority === 'high' ? '<span class="tag red">重要</span> ' : ''}${esc(t.title)}</div>
@@ -284,6 +284,41 @@ export function mount(root) {
     </div>
     ${body}
   `;
+
+  // 拖拽：把任务拖到某个项目卡片上 = 移动到那个项目
+  root.querySelectorAll('.list-item[draggable]').forEach(el => {
+    el.addEventListener('dragstart', e => {
+      e.dataTransfer.setData('text/plain', el.dataset.prj + ':' + el.dataset.task);
+      e.dataTransfer.effectAllowed = 'move';
+    });
+  });
+  root.querySelectorAll('[data-pid]').forEach(card => {
+    card.addEventListener('dragover', e => { e.preventDefault(); card.style.outline = '2px dashed var(--accent)'; });
+    card.addEventListener('dragleave', () => { card.style.outline = ''; });
+    card.addEventListener('drop', e => {
+      e.preventDefault();
+      card.style.outline = '';
+      const pid = card.dataset.pid;
+      const raw = String(e.dataTransfer.getData('text/plain') || '');
+      const [fromId, taskId] = raw.split(':');
+      if (!pid || !fromId || !taskId || fromId === pid) return;
+      let moved = '';
+      store.update(d => {
+        const from = d.projects.find(p => p.id === fromId);
+        const to = d.projects.find(p => p.id === pid);
+        if (!from || !to) return;
+        const idx = (from.tasks || []).findIndex(t => t.id === taskId);
+        if (idx < 0) return;
+        const [task] = from.tasks.splice(idx, 1);
+        // 目标项目里没有同 id 的模块就清掉模块归属，免得不显示
+        if (task.moduleId && !(to.modules || []).some(m => m.id === task.moduleId)) task.moduleId = '';
+        to.tasks = to.tasks || [];
+        to.tasks.unshift(task);
+        moved = to.name;
+      });
+      if (moved) { toast('已移动到「' + moved + '」', 'ok'); mount(root); }
+    });
+  });
 
   // 批量：整个项目一键完成 / 清掉已完成
   root.querySelectorAll('[data-pdone]').forEach(b => b.addEventListener('click', async () => {
