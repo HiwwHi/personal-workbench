@@ -195,6 +195,16 @@ async function ensurePath(dir, rel) {
   return d;
 }
 
+/* 只解析不创建：读路径（看图、列目录）绝不能顺手在用户目录里造文件夹 */
+async function resolvePath(dir, rel) {
+  let d = dir;
+  for (const part of String(rel || '').split('/')) {
+    if (!part) continue;
+    d = await d.getDirectoryHandle(part);
+  }
+  return d;
+}
+
 /* ---------- 运行时目录：所有中间文件都落在这里，笔记源目录保持干净 ---------- */
 
 export class NoRuntimeError extends Error {
@@ -230,7 +240,7 @@ export async function listRuntime(sub) {
   const root = await restoreDir('runtime');
   if (!root) return [];
   let dir;
-  try { dir = sub ? await ensurePath(root, sub) : root; } catch { return []; }
+  try { dir = sub ? await resolvePath(root, sub) : root; } catch { return []; }
   const out = [];
   for await (const [name, handle] of dir.entries()) {
     if (handle.kind === 'file') out.push(name);
@@ -278,7 +288,7 @@ export async function blobUrlFor(slot, parentPath, name) {
   const root = await restoreDir(slot);
   if (!root) return '';
   try {
-    const dir = parentPath ? await ensurePath(root, parentPath) : root;
+    const dir = parentPath ? await resolvePath(root, parentPath) : root;
     const fh = await dir.getFileHandle(name);
     const f = await fh.getFile();
     return URL.createObjectURL(f);
