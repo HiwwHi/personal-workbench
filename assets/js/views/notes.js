@@ -213,8 +213,33 @@ function recentList() {
   }).sort((a, b) => b.count - a.count).slice(0, 3);
 }
 
+/* 读磁盘修改时间：并发 6，结果缓存起来，避免每次渲染都读一遍 */
+async function fillMtimes() {
+  if (srcKey() !== 'fsa') return;
+  const ui = store.notesSlotUI(slot);
+  ui.mtimes = ui.mtimes || {};
+  const todo = files.filter(f => f.handle && !f.mtime);
+  if (!todo.length) return;
+  let i = 0;
+  const worker = async () => {
+    while (i < todo.length) {
+      const f = todo[i++];
+      try {
+        const meta = await f.handle.getFile();
+        f.mtime = meta.lastModified || 0;
+        ui.mtimes[f.path] = f.mtime;
+      } catch { f.mtime = 0; }
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(6, todo.length) }, worker));
+  store.save();
+}
+
 async function loadFiles() {
   files = source ? await source.list() : [];
+  const mtimes = store.notesSlotUI(slot).mtimes || {};
+  files.forEach(f => { if (mtimes[f.path]) f.mtime = mtimes[f.path]; });
+  fillMtimes();          // 后台补全，不阻塞首次渲染
 }
 
 async function openFile(f, section) {
@@ -502,13 +527,19 @@ function toolbarHTML() {
 function render() {
   const root = document.querySelector('#view');
   const recent = recentList();
-  // 当前打开的排最前，其次是上次看过的，其余按名称
+  // 当前打开的排最前，其次上次看过的，其余按「最近修改」倒序（还没读到时间的按名称）
   const uiNow = store.notesSlotUI(slot);
   const rank = p => (current && p === current.path ? 0 : p === uiNow.last ? 1 : 2);
   const visibleFiles = (query
     ? files.filter(f => f.path.toLowerCase().includes(query.toLowerCase()))
     : files.slice())
-    .sort((a, b) => rank(a.path) - rank(b.path) || a.path.localeCompare(b.path, 'zh'));
+    .sort((a, b) => {
+      const ra = rank(a.path), rb = rank(b.path);
+      if (ra !== rb) return ra - rb;
+      if (ra !== 2) return 0;
+      const d = (b.mtime || 0) - (a.mtime || 0);
+      return d !== 0 ? d : a.path.localeCompare(b.path, 'zh');
+    });
 
   root.innerHTML = `
     <div class="notes-layout">
