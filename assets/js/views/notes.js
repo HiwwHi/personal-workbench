@@ -265,10 +265,9 @@ async function openFile(f, section) {
   }
 
   text = draftText || res.text;
-  dirty = !!draftText;
+  dirty = !!draftText;          // 恢复草稿后必须保持"未保存"，否则保存按钮一直灰着
   modified = res.modified;
   current = f;
-  dirty = false;
   mode = 'read';
   focusSec = section || null;
   bumpRecent(f.path, section || '');
