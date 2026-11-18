@@ -5,6 +5,7 @@ const SCHEME_RE = /^[a-z][a-z0-9+.-]*:/i;
 function safeUrl(u) {
   const s = String(u || '').trim();
   if (/^(https?:|mailto:)/i.test(s)) return s;
+  if (s.startsWith('//')) return '';     // 协议相对地址（//evil.com）会真的跳外站，不放行
   if (SCHEME_RE.test(s)) return '';
   return s;                       // 相对路径、#锚点
 }
