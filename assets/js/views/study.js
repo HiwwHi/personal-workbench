@@ -75,11 +75,14 @@ function checkin(s, done) {
     onOk(body) {
       const minutes = Number(body.querySelector('[data-f="minutes"]').value) || 0;
       const note = body.querySelector('[data-f="note"]').value.trim();
+      let missing = false;
       store.update(d => {
         const x = d.study.find(y => y.id === s.id);
+        if (!x) { missing = true; return; }       // 别处删掉了这条计划
         x.checkins = x.checkins || {};
         x.checkins[t] = { minutes, note };
       });
+      if (missing) { toast('这条学习计划已不存在，刷新一下', 'warn'); return false; }
       toast('打卡成功', 'ok'); return true;
     }
   });
