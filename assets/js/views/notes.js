@@ -111,6 +111,11 @@ async function initSource(force = false) {
 
 async function switchSlot(next) {
   if (next === slot) return;
+  if (dirty) {
+    const ok = await confirmBox('有未保存的修改', '切换笔记库会丢掉当前未保存的内容，确定吗？', '放弃修改');
+    if (!ok) return;
+    draftClear(current && current.path);
+  }
   slot = next;
   store.setSetting('notesSlot', next);
   source = null; files = []; current = null; text = ''; modified = null;
