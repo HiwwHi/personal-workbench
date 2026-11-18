@@ -771,7 +771,7 @@ function wire(root) {
   const inst = root.querySelector('#btnInstallSkills');
   if (inst) inst.addEventListener('click', async () => {
     try {
-      const skills = d.skills.map(s => ({ name: s.name, content: skillsView.toSkillMd(s) }));
+      const skills = store.load().skills.map(s => ({ name: s.name, content: skillsView.toSkillMd(s) }));
       let r;
       try {
         r = await ai.installCursorUserSkills(skills);
