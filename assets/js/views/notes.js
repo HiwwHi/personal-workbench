@@ -532,9 +532,11 @@ function toolbarHTML() {
 
 /* 阅读时把相对路径的图片换成 blob URL（用完回收） */
 const objectUrls = [];
+let renderSeq = 0;          // 每次渲染 +1：用来判断异步读图的结果是否已经过期
 async function hydrateImages() {
   const view = document.querySelector('#view');
   if (!view || srcKey() !== 'fsa' || !current) return;
+  const mySeq = renderSeq;
   const dirOfNote = current.path.includes('/') ? current.path.slice(0, current.path.lastIndexOf('/')) : '';
   for (const img of [...view.querySelectorAll('.mdview img')]) {
     const src = img.getAttribute('src') || '';
@@ -544,11 +546,16 @@ async function hydrateImages() {
     const parent = slash >= 0 ? full.slice(0, slash) : '';
     const name = slash >= 0 ? full.slice(slash + 1) : full;
     const url = await fsa.blobUrlFor(slot, parent, name);
-    if (url) { objectUrls.push(url); img.src = url; }
+    if (!url) continue;
+    // 等读完这段时间里已经重新渲染过（切了笔记/重新加载），这个 URL 直接丢掉，避免写错节点和泄漏
+    if (mySeq !== renderSeq) { try { URL.revokeObjectURL(url); } catch {} continue; }
+    objectUrls.push(url);
+    img.src = url;
   }
 }
 
 function render() {
+  renderSeq++;
   objectUrls.forEach(u => { try { URL.revokeObjectURL(u); } catch {} });
   objectUrls.length = 0;
   const root = document.querySelector('#view');
