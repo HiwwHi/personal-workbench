@@ -524,7 +524,27 @@ function toolbarHTML() {
   `;
 }
 
+/* 阅读时把相对路径的图片换成 blob URL（用完回收） */
+const objectUrls = [];
+async function hydrateImages() {
+  const view = document.querySelector('#view');
+  if (!view || srcKey() !== 'fsa' || !current) return;
+  const dirOfNote = current.path.includes('/') ? current.path.slice(0, current.path.lastIndexOf('/')) : '';
+  for (const img of [...view.querySelectorAll('.mdview img')]) {
+    const src = img.getAttribute('src') || '';
+    if (!src || /^(https?:|data:|blob:)/i.test(src)) continue;
+    const full = ((dirOfNote ? dirOfNote + '/' : '') + src.replace(/^\.\//, ''));
+    const slash = full.lastIndexOf('/');
+    const parent = slash >= 0 ? full.slice(0, slash) : '';
+    const name = slash >= 0 ? full.slice(slash + 1) : full;
+    const url = await fsa.blobUrlFor(slot, parent, name);
+    if (url) { objectUrls.push(url); img.src = url; }
+  }
+}
+
 function render() {
+  objectUrls.forEach(u => { try { URL.revokeObjectURL(u); } catch {} });
+  objectUrls.length = 0;
   const root = document.querySelector('#view');
   const recent = recentList();
   // 当前打开的排最前，其次上次看过的，其余按「最近修改」倒序（还没读到时间的按名称）
@@ -674,8 +694,38 @@ function sync() {
   if (badge) badge.innerHTML = '<i class="dirty-dot"></i>编辑中 · 有未保存改动';
 }
 
+/* 编辑模式下粘贴图片：存到笔记旁边的 assets/，正文插入相对路径 */
+let pasteBound = false;
+function bindPaste(root) {
+  if (pasteBound) return;
+  pasteBound = true;
+  root.addEventListener('paste', async e => {
+    const ta = e.target;
+    if (!ta || ta.id !== 'mdCode') return;
+    const img = [...((e.clipboardData && e.clipboardData.files) || [])].find(f => /^image\//.test(f.type));
+    if (!img) return;
+    e.preventDefault();
+    if (srcKey() !== 'fsa') { toast('内置笔记库不支持粘贴图片，请先连接本地文件夹', 'warn'); return; }
+    try {
+      const ext = String(img.type.split('/')[1] || 'png').replace('jpeg', 'jpg');
+      const name = 'paste-' + Date.now() + '.' + ext;
+      const dirOfNote = current.path.includes('/') ? current.path.slice(0, current.path.lastIndexOf('/')) : '';
+      const rel = (dirOfNote ? dirOfNote + '/' : '') + 'assets/' + name;
+      await fsa.writeBinary(slot, (dirOfNote ? dirOfNote + '/' : '') + 'assets', name, img);
+      const pos = ta.selectionStart;
+      const md = `![](${rel})`;
+      ta.value = ta.value.slice(0, pos) + md + ta.value.slice(ta.selectionEnd);
+      ta.selectionStart = ta.selectionEnd = pos + md.length;
+      sync();                        // 同步文本、脏标记与本地草稿
+      toast('图片已存到 assets/，保存笔记后长期生效', 'ok');
+    } catch (err) { toast(err.message || '粘贴图片失败', 'warn'); }
+  });
+}
+
 function wire() {
   const root = document.querySelector('#view');
+  hydrateImages();
+  bindPaste(root);
 
   // [[笔记名]] 双链：当前槽位里按名字找，找到就打开，找不到给个提示
   root.querySelectorAll('.wikilink').forEach(a => a.addEventListener('click', async e => {

@@ -261,6 +261,30 @@ export async function saveWithBackup(slot, file, content, expectedModified) {
   return { ok: true, modified: nf.lastModified, backup: `备份/${SLOT_LABEL[slot] || slot}/${bakName}` };
 }
 
+/* 往笔记目录里写二进制（粘贴的图片）：目录不存在会自动建 */
+export async function writeBinary(slot, parentPath, name, blob) {
+  const root = await restoreDir(slot);
+  if (!root) throw new Error('笔记文件夹未连接');
+  const dir = parentPath ? await ensurePath(root, parentPath) : root;
+  const fh = await dir.getFileHandle(name, { create: true });
+  const w = await fh.createWritable();
+  await w.write(blob);
+  await w.close();
+  return name;
+}
+
+/* 相对路径的图片读成 blob URL：浏览器不能直接加载本地相对路径 */
+export async function blobUrlFor(slot, parentPath, name) {
+  const root = await restoreDir(slot);
+  if (!root) return '';
+  try {
+    const dir = parentPath ? await ensurePath(root, parentPath) : root;
+    const fh = await dir.getFileHandle(name);
+    const f = await fh.getFile();
+    return URL.createObjectURL(f);
+  } catch { return ''; }
+}
+
 export async function createFile(slot, parentPath, name, content) {
   const root = await restoreDir(slot);
   if (!root) throw new Error('笔记文件夹未连接');
