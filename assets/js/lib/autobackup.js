@@ -14,7 +14,8 @@ let timer = null;
 function stamp() {
   const d = new Date();
   const p = n => String(n).padStart(2, '0');
-  return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`;
+  // 带毫秒：防抖定时器与「立即备份」同时触发时，文件名不能撞
+  return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}${String(d.getMilliseconds()).padStart(3, '0')}`;
 }
 
 export function lastAt() { return Number(store.settings().lastAutoBackup) || 0; }
