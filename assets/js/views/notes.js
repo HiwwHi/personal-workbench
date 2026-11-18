@@ -216,10 +216,12 @@ function recentList() {
 /* 读磁盘修改时间：并发 6，结果缓存起来，避免每次渲染都读一遍 */
 async function fillMtimes() {
   if (srcKey() !== 'fsa') return;
-  const ui = store.notesSlotUI(slot);
-  ui.mtimes = ui.mtimes || {};
-  const todo = files.filter(f => f.handle && !f.mtime);
+  const mySlot = slot;
+  const myFiles = files;
+  const todo = myFiles.filter(f => f.handle && !f.mtime);
   if (!todo.length) return;
+  const ui = store.notesSlotUI(mySlot);
+  ui.mtimes = ui.mtimes || {};
   let i = 0;
   const worker = async () => {
     while (i < todo.length) {
@@ -233,13 +235,17 @@ async function fillMtimes() {
   };
   await Promise.all(Array.from({ length: Math.min(6, todo.length) }, worker));
   store.save();
+  // 中途切了槽位或换了页面就别动：render() 会覆盖当前视图
+  if (slot !== mySlot) return;
+  const view = document.querySelector('#view');
+  if (todo.some(f => f.mtime) && view && view.querySelector('.notes-layout')) render();
 }
 
 async function loadFiles() {
   files = source ? await source.list() : [];
   const mtimes = store.notesSlotUI(slot).mtimes || {};
   files.forEach(f => { if (mtimes[f.path]) f.mtime = mtimes[f.path]; });
-  fillMtimes();          // 后台补全，不阻塞首次渲染
+  fillMtimes().catch(() => { });     // 后台补全，不阻塞首次渲染，失败也不打扰
 }
 
 async function openFile(f, section) {
@@ -724,7 +730,7 @@ function bindPaste(root) {
 
 function wire() {
   const root = document.querySelector('#view');
-  hydrateImages();
+  hydrateImages().catch(() => { });
   bindPaste(root);
 
   // [[笔记名]] 双链：当前槽位里按名字找，找到就打开，找不到给个提示
