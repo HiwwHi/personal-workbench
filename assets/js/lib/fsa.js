@@ -175,7 +175,8 @@ export async function readFile(fh) {
 function stamp() {
   const d = new Date();
   const p = n => String(n).padStart(2, '0');
-  return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`;
+  // 带毫秒：同一秒内保存两次时，备份文件名不能撞，否则第二次会覆盖第一份快照
+  return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}${String(d.getMilliseconds()).padStart(3, '0')}`;
 }
 
 async function writeTo(parent, name, content) {
