@@ -17,6 +17,14 @@ export function rangeOf(kind = 'week') {
   return { from, to, days };
 }
 
+/* ISO 时间转本地日期：直接 slice(0,10) 会把东八区凌晨的记录算到前一天 */
+const localDay = v => {
+  const d = new Date(v);
+  if (isNaN(d.getTime())) return String(v || '').slice(0, 10);
+  const p = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+};
+
 const mdEsc = s => String(s == null ? '' : s)
   .replace(/([\\`*_{}[\]()#+\-.!|>])/g, '\\$1')
   .replace(/\n/g, ' ');
@@ -59,7 +67,7 @@ export function build(kind = 'week') {
 
   /* 随手记 */
   const jots = (d.jots || []).filter(j => {
-    const ds = String(j.createdAt || j.at || '').slice(0, 10);
+    const ds = localDay(j.createdAt || j.at);
     return ds >= from && ds <= to;
   });
 
@@ -136,7 +144,7 @@ export function build(kind = 'week') {
     out.push('## 随手记');
     out.push('');
     for (const j of jots.slice(0, 30)) {
-      const ds = String(j.createdAt || j.at || '').slice(0, 10);
+      const ds = localDay(j.createdAt || j.at);
       const text = String(j.text || '').replace(/\n/g, ' ').slice(0, 80);
       out.push(`- ${ds} ${mdEsc(text)}`);
     }
