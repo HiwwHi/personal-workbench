@@ -109,10 +109,22 @@ export function mount(root) {
 
   /* 近 12 周完成热力：每格一天，颜色越深当天完成越多 */
   const heatCells = (() => {
+    // 一次扫完所有任务的历史，按天计数；原来每天调一次 historyOn 等于 84 次全表扫描
+    const counts = {};
+    for (const x of M.allTasks()) {
+      const t = x.task;
+      const seen = new Set();
+      for (const h of (t.history || [])) {
+        const d = typeof h === 'string' ? h : h.date;
+        if (d) seen.add(d);
+      }
+      if (!seen.size && t.repeat === 'none' && t.done && t.doneAt) seen.add(String(t.doneAt).slice(0, 10));
+      for (const d of seen) counts[d] = (counts[d] || 0) + 1;
+    }
     const out = [];
     for (let i = 83; i >= 0; i--) {
       const ds = dateAdd(-i);
-      const n = M.historyOn(ds).length;
+      const n = counts[ds] || 0;
       const lv = n === 0 ? 0 : n <= 1 ? 1 : n <= 3 ? 2 : n <= 6 ? 3 : 4;
       const bg = ['var(--surface-3)', 'rgba(95,143,113,.25)', 'rgba(95,143,113,.45)', 'rgba(95,143,113,.7)', 'var(--green)'][lv];
       out.push(`<i title="${esc(ds)} · ${n} 项" style="display:block;width:11px;height:11px;border-radius:2px;background:${bg}"></i>`);
