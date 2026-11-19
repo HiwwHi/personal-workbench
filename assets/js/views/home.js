@@ -145,6 +145,8 @@ export function mount(root) {
       <div class="row wrap">
         <button class="btn primary sm" id="btnWeekly">生成周报</button>
         <button class="btn sm" id="btnMonthly">生成月报</button>
+        <button class="btn sm" id="btnLastWeek">上周</button>
+        <button class="btn sm" id="btnLastMonth">上月</button>
       </div>
     </div>`);
 
@@ -187,6 +189,10 @@ export function mount(root) {
   if (bWeek) bWeek.addEventListener('click', () => reportModal('week'));
   const bMonth = root.querySelector('#btnMonthly');
   if (bMonth) bMonth.addEventListener('click', () => reportModal('month'));
+  const bLastWeek = root.querySelector('#btnLastWeek');
+  if (bLastWeek) bLastWeek.addEventListener('click', () => reportModal('lastweek'));
+  const bLastMonth = root.querySelector('#btnLastMonth');
+  if (bLastMonth) bLastMonth.addEventListener('click', () => reportModal('lastmonth'));
 }
 
 /* 生成并预览报告；确认后落到「中间文件目录/报告/」，没有目录就下载 */

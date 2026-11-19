@@ -3,8 +3,25 @@ import * as M from './model.js';
 import { today, dateAdd } from './ui.js';
 
 /* 报告区间：周报 = 本周一到今天，月报 = 本月 1 号到今天 */
+const LABEL = { week: '周报', month: '月报', lastweek: '上周周报', lastmonth: '上月月报' };
+export function labelOf(kind) { return LABEL[kind] || LABEL.week; }
+
 export function rangeOf(kind = 'week') {
   const to = today();
+  if (kind === 'lastweek') {
+    const d = new Date(to + 'T00:00:00');
+    const monday = dateAdd(-((d.getDay() === 0 ? 7 : d.getDay()) - 1), to);   // 本周一
+    const end = dateAdd(-1, monday);                                          // 上周日
+    return { from: dateAdd(-6, end), to: end, days: 7 };
+  }
+  if (kind === 'lastmonth') {
+    const d = new Date(to + 'T00:00:00');
+    const firstThis = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
+    const end = dateAdd(-1, firstThis);
+    const start = end.slice(0, 8) + '01';
+    const days = Math.round((new Date(end + 'T00:00:00') - new Date(start + 'T00:00:00')) / 86400000) + 1;
+    return { from: start, to: end, days };
+  }
   let from;
   if (kind === 'month') {
     from = to.slice(0, 8) + '01';
@@ -36,7 +53,7 @@ function taskLine(x) {
 
 export function build(kind = 'week') {
   const { from, to, days } = rangeOf(kind);
-  const label = kind === 'month' ? '月报' : '周报';
+  const label = labelOf(kind);
   const d = store.load();
 
   /* 完成情况：按天扫，顺便拿到每天的完成清单 */
@@ -179,5 +196,5 @@ export function build(kind = 'week') {
 
 export function fileName(kind = 'week') {
   const { to } = rangeOf(kind);
-  return `工作台${kind === 'month' ? '月报' : '周报'}-${to}.md`;
+  return `工作台${labelOf(kind)}-${to}.md`;
 }
