@@ -4,6 +4,8 @@ import { esc, dateAdd } from '../lib/ui.js';
 
 export const meta = { key: 'stats', title: '数据统计', sub: '任务完成 · 项目进度 · 学习打卡' };
 
+let range = 30;        // 柱状图统计天数：7 / 30 / 90
+
 /* 近 n 天每天完成数：一次扫完历史，避免按天反复全表扫描 */
 function lastNDays(n) {
   const counts = {};
@@ -32,13 +34,13 @@ export function mount(root) {
   const todoN = M.dueToday().length;
   const overN = M.overdue().length;
 
-  const days = lastNDays(30);
+  const days = lastNDays(range);
   const max = Math.max(1, ...days.map(x => x.n));
   const sum30 = days.reduce((a, b) => a + b.n, 0);
 
   const study = d.study || [];
   let studyDays = 0;
-  for (let i = 0; i < 30; i++) {
+  for (let i = 0; i < range; i++) {
     const ds = dateAdd(-i);
     if (study.some(s => (s.checkins || {})[ds])) studyDays++;
   }
@@ -60,11 +62,16 @@ export function mount(root) {
 
     <div class="grid grid-2">
       <div class="card">
-        <div class="card-head"><div class="card-title">近 30 天完成</div><span class="hint">每根是一个自然日</span></div>
+        <div class="card-head">
+          <div class="card-title">近 ${range} 天完成</div>
+          <span class="row" style="gap:4px">
+            ${[7, 30, 90].map(n => `<button class="btn sm ${range === n ? 'primary' : ''}" data-range="${n}">${n} 天</button>`).join('')}
+          </span>
+        </div>
         <div style="display:flex;align-items:flex-end;gap:3px;height:110px">
           ${days.map(x => `<i title="${esc(x.d)} · ${x.n} 项" style="flex:1;height:${Math.round(x.n / max * 100)}%;min-height:2px;background:var(--green);opacity:${x.n ? 0.85 : 0.15};border-radius:2px"></i>`).join('')}
         </div>
-        <div class="hint mt6">合计 <b>${sum30}</b> 项 · 单日最高 <b>${max}</b> 项 · 近 30 天学习打卡 <b>${studyDays}</b> 天</div>
+        <div class="hint mt6">合计 <b>${sum30}</b> 项 · 单日最高 <b>${max}</b> 项 · 近 ${range} 天学习打卡 <b>${studyDays}</b> 天</div>
       </div>
 
       <div class="card">
@@ -83,4 +90,9 @@ export function mount(root) {
       <div class="stat"><div class="stat-num">${(d.skills || []).length}</div><div class="stat-label">Skill</div></div>
     </div>
   `;
+
+  root.querySelectorAll('[data-range]').forEach(b => b.addEventListener('click', () => {
+    range = Number(b.dataset.range) || 30;
+    mount(root);
+  }));
 }
