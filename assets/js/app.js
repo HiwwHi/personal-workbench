@@ -16,7 +16,9 @@ import * as system from './views/system.js';
 import * as ai from './lib/aibridge.js';
 import * as autobackup from './lib/autobackup.js';
 
-const views = { home, vault, tasks, study, skills, notes, jots, health, system };
+import * as stats from './views/stats.js';
+
+const views = { home, vault, tasks, study, skills, notes, jots, health, stats, system };
 const ORDER = ['home', 'vault', 'tasks', 'study', 'skills', 'notes', 'jots', 'health', 'system'];
 const SENSITIVE = ['vault', 'health', 'jots'];
 
