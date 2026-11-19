@@ -739,10 +739,26 @@ function bindPaste(root) {
   });
 }
 
+/* 点正文里的图片放大看 */
+let imgBound = false;
+function bindImageZoom(root) {
+  if (imgBound) return;
+  imgBound = true;
+  root.addEventListener('click', e => {
+    const img = e.target && e.target.closest ? e.target.closest('.mdview img') : null;
+    if (!img) return;
+    modal({
+      title: '查看图片', wide: true, okText: '关闭', cancelText: '关闭',
+      body: `<div style="text-align:center"><img src="${esc(img.src)}" style="max-width:100%;max-height:70vh;border-radius:6px"></div>`
+    });
+  });
+}
+
 function wire() {
   const root = document.querySelector('#view');
   hydrateImages().catch(() => { });
   bindPaste(root);
+  bindImageZoom(root);
 
   // [[笔记名]] 双链：当前槽位里按名字找，找到就打开，找不到给个提示
   root.querySelectorAll('.wikilink').forEach(a => a.addEventListener('click', async e => {
