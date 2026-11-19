@@ -24,25 +24,48 @@ function add(text) {
   tagFilter = '';        // 新记录可能不带当前筛选的标签，清掉以免"记了却看不见"
 }
 
-/* 把一条随手记变成任务：没项目时自动建一个「收件箱」，原记录归档留底 */
+/* 把一条随手记变成任务：选项目（默认收件箱），原记录归档留底 */
 function toTask(j, root) {
   const title = String(j.text || '').replace(/#[^\s#]{1,12}/g, '').trim().slice(0, 60) || '未命名任务';
-  store.update(d => {
-    let p = d.projects.find(x => x.name === INBOX);
-    if (!p) {
-      p = { id: uid(), name: INBOX, owner: '', due: '', desc: '从随手记转过来的待办先放这里', modules: [], tasks: [], createdAt: today() };
-      d.projects.unshift(p);
+  const prjs = (store.load().projects || []).slice();
+  const inbox = prjs.find(p => p.name === INBOX);
+  modal({
+    title: '转成任务', okText: '创建',
+    body: `<div class="hint mb8">任务标题：${esc(title)}</div>
+      <label class="field"><span>放到哪个项目</span>
+        <select data-f="prj">
+          ${inbox ? `<option value="${esc(inbox.id)}" selected>${esc(INBOX)}</option>` : ''}
+          ${prjs.filter(p => p.name !== INBOX).map(p => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('')}
+          <option value="">（新建「收件箱」）</option>
+        </select>
+      </label>
+      <div class="hint mt6">转换后这条记录会归档，归档里还能找回。</div>`,
+    onOk(body) {
+      const pid = body.querySelector('[data-f="prj"]').value;
+      let where = '';
+      store.update(d => {
+        let p = pid ? d.projects.find(x => x.id === pid) : null;
+        if (!p) {
+          p = d.projects.find(x => x.name === INBOX);
+          if (!p) {
+            p = { id: uid(), name: INBOX, owner: '', due: '', desc: '从随手记转过来的待办先放这里', modules: [], tasks: [], createdAt: today() };
+            d.projects.unshift(p);
+          }
+        }
+        p.tasks = p.tasks || [];
+        p.tasks.unshift({
+          id: uid(), title, due: today(), moduleId: '', repeat: 'none', priority: 'normal',
+          done: false, doneAt: null, lastDone: null, history: []
+        });
+        const src = d.jots.find(x => x.id === j.id);
+        if (src) { src.archived = true; src.convertedAt = today(); }
+        where = p.name;
+      });
+      toast('已加到「' + where + '」，原记录已归档', 'ok');
+      mount(root);
+      return true;
     }
-    p.tasks = p.tasks || [];
-    p.tasks.unshift({
-      id: uid(), title, due: today(), moduleId: '', repeat: 'none', priority: 'normal',
-      done: false, doneAt: null, lastDone: null, history: []
-    });
-    const src = d.jots.find(x => x.id === j.id);
-    if (src) { src.archived = true; src.convertedAt = today(); }
   });
-  toast('已加入「收件箱」，原记录已归档', 'ok');
-  mount(root);
 }
 
 function timeAgo(iso) {
