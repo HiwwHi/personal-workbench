@@ -195,6 +195,17 @@ function boot() {
   window.addEventListener('hashchange', route);
   window.addEventListener('wb:refresh', () => { if (currentKey === 'health' || currentKey === 'home') route(); });
 
+  // Alt+1..9 直达侧栏对应页面（顺序与侧栏一致）
+  document.addEventListener('keydown', e => {
+    if (!e.altKey || e.ctrlKey || e.metaKey) return;
+    const n = Number(e.key);
+    if (!Number.isInteger(n) || n < 1 || n > 9) return;
+    const item = [...document.querySelectorAll('.nav-item')][n - 1];
+    if (!item || !item.dataset.key) return;
+    e.preventDefault();
+    location.hash = '#/' + item.dataset.key;
+  });
+
   // 本地存储写满时只提醒一次，别刷屏
   let storageWarned = false;
   window.addEventListener('wb:storage-error', () => {
