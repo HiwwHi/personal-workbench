@@ -7,6 +7,7 @@ export const meta = { key: 'tasks', title: '任务管理', sub: '项目 · 模�
 let tab = 'today';
 let cal = null;
 let selDate = today();
+let prjFilter = '';          // 只看某个项目（空 = 全部）
 
 function projectForm(p) {
   p = p || {};
@@ -183,9 +184,10 @@ export function mount(root) {
 
   let body = '';
   if (tab === 'today') {
-    const todo = M.dueToday();
-    const backlog = M.noDue().slice(0, 12);
-    const done = M.historyOn(t);
+    const inP = x => !prjFilter || x.project.id === prjFilter;
+    const todo = M.dueToday().filter(inP);
+    const backlog = M.noDue().filter(inP).slice(0, 12);
+    const done = M.historyOn(t).filter(inP);
     body = `
       <div class="grid grid-2">
         <div class="card">
@@ -207,7 +209,7 @@ export function mount(root) {
         </div>
       </div>`;
   } else if (tab === 'upcoming') {
-    const up = M.upcoming(7);
+    const up = M.upcoming(7).filter(x => !prjFilter || x.project.id === prjFilter);
     const byDate = {};
     up.forEach(x => { (byDate[x.task.due] = byDate[x.task.due] || []).push(x); });
     body = Object.keys(byDate).length ? Object.keys(byDate).sort().map(d => `
@@ -216,8 +218,8 @@ export function mount(root) {
         ${byDate[d].map(x => taskRow(x)).join('')}
       </div>`).join('') : '<div class="card"><div class="empty">未来 7 天没有排期任务</div></div>';
   } else {
-    const sel = M.historyOn(selDate);
-    const due_sel = M.allTasks().filter(x => x.task.due === selDate);
+    const sel = M.historyOn(selDate).filter(x => !prjFilter || x.project.id === prjFilter);
+    const due_sel = M.allTasks().filter(x => x.task.due === selDate && (!prjFilter || x.project.id === prjFilter));
     body = `
       <div class="card">
         <div class="card-head">
@@ -248,6 +250,10 @@ export function mount(root) {
       <div class="row wrap grow">
         <button class="btn primary" id="newPrj"><svg viewBox="0 0 24 24" class="mini"><path d="M12 5v14M5 12h14"/></svg>新建项目</button>
         <button class="btn" id="newTask">快速新增任务</button>
+        <select id="prjFilter" style="max-width:190px" title="只看某个项目">
+          <option value="">全部项目</option>
+          ${prjs.map(p => `<option value="${esc(p.id)}" ${prjFilter === p.id ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}
+        </select>
       </div>
     </div>
 
@@ -380,6 +386,8 @@ export function mount(root) {
     mount(root);
   }));
   root.querySelector('#newPrj').addEventListener('click', () => editProject(null, () => mount(root)));
+  const pf = root.querySelector('#prjFilter');
+  if (pf) pf.addEventListener('change', () => { prjFilter = pf.value; mount(root); });
 
   root.querySelectorAll('[data-pedit]').forEach(b => b.addEventListener('click', e => {
     e.stopPropagation(); editProject(b.dataset.pedit, () => mount(root));
