@@ -181,6 +181,8 @@ function calHtml() {
 export function mount(root) {
   const prjs = store.load().projects;
   const t = today();
+  // 项目被删（或恢复备份后 id 变了）时筛选值会悬空：列表空白、下拉却显示「全部项目」
+  if (prjFilter && !prjs.some(p => p.id === prjFilter)) prjFilter = '';
 
   let body = '';
   if (tab === 'today') {
