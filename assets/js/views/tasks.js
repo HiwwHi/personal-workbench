@@ -8,6 +8,7 @@ let tab = 'today';
 let cal = null;
 let selDate = today();
 let prjFilter = '';          // 只看某个项目（空 = 全部）
+let onlyOver = false;        // 今日列表只看逾期
 
 function projectForm(p) {
   p = p || {};
@@ -186,21 +187,22 @@ export function mount(root) {
   const t = today();
   // 项目被删（或恢复备份后 id 变了）时筛选值会悬空：列表空白、下拉却显示「全部项目」
   if (prjFilter && !prjs.some(p => p.id === prjFilter)) prjFilter = '';
+  const overN = M.overdue().length;
 
   let body = '';
   if (tab === 'today') {
     const inP = x => !prjFilter || x.project.id === prjFilter;
-    const todo = M.dueToday().filter(inP);
+    const todo = onlyOver ? M.overdue().filter(inP) : M.dueToday().filter(inP);
     const backlog = M.noDue().filter(inP).slice(0, 12);
     const done = M.historyOn(t).filter(inP);
     body = `
       <div class="grid grid-2">
         <div class="card">
           <div class="card-head">
-            <div class="card-title">今天要做（${todo.length}）</div>
-            ${todo.length ? '<button class="btn-ghost sm" id="doneTodayAll">全部完成</button>' : ''}
+            <div class="card-title">${onlyOver ? '已逾期' : '今天要做'}（${todo.length}）</div>
+            ${todo.length && !onlyOver ? '<button class="btn-ghost sm" id="doneTodayAll">全部完成</button>' : ''}
           </div>
-          ${todo.length ? todo.map(x => taskRow(x)).join('') : '<div class="empty">今天没有到期任务</div>'}
+          ${todo.length ? todo.map(x => taskRow(x)).join('') : `<div class="empty">${onlyOver ? '没有逾期任务，保持住' : '今天没有到期任务'}</div>`}
         </div>
         <div>
           <div class="card">
@@ -260,6 +262,7 @@ export function mount(root) {
           <option value="">全部项目</option>
           ${prjs.map(p => `<option value="${esc(p.id)}" ${prjFilter === p.id ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}
         </select>
+        <button class="btn sm ${onlyOver ? 'primary' : ''}" id="btnOver" title="只列出已经过了截止日的任务">只看逾期${overN ? `（${overN}）` : ''}</button>
       </div>
     </div>
 
@@ -394,6 +397,8 @@ export function mount(root) {
   root.querySelector('#newPrj').addEventListener('click', () => editProject(null, () => mount(root)));
   const pf = root.querySelector('#prjFilter');
   if (pf) pf.addEventListener('change', () => { prjFilter = pf.value; mount(root); });
+  const bo = root.querySelector('#btnOver');
+  if (bo) bo.addEventListener('click', () => { onlyOver = !onlyOver; mount(root); });
 
   root.querySelectorAll('[data-pedit]').forEach(b => b.addEventListener('click', e => {
     e.stopPropagation(); editProject(b.dataset.pedit, () => mount(root));
