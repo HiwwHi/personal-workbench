@@ -10,9 +10,15 @@ function safeUrl(u) {
   return s;                       // 相对路径、#锚点
 }
 
+/* 内联替换的占位符：用 Unicode 私用区字符。
+   原来用 @S0S@，用户正文里真写了这个字符串就会被替换成 undefined */
+const PH_L = '\uE000';
+const PH_R = '\uE001';
+const PH_RE = new RegExp(PH_L + '(\\d+)' + PH_R, 'g');
+
 function inline(s) {
   const stash = [];
-  const put = html => { stash.push(html); return '@S' + (stash.length - 1) + 'S@'; };
+  const put = html => { stash.push(html); return PH_L + (stash.length - 1) + PH_R; };
   s = s.replace(/`([^`]+)`/g, (m, c) => put('<code>' + c + '</code>'));
   s = s.replace(/!\[([^\]]*)\]\(([^)\s]+)\)/g, (m, a, u) => {
     const src = safeUrl(u);
@@ -28,7 +34,7 @@ function inline(s) {
   s = s.replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<em>$2</em>');
   s = s.replace(/__([^_]+)__/g, '<strong>$1</strong>');
   s = s.replace(/~~([^~]+)~~/g, '<del>$1</del>');
-  s = s.replace(/@S(\d+)S@/g, (m, n) => stash[Number(n)]);
+  s = s.replace(PH_RE, (m, n) => stash[Number(n)]);
   return s;
 }
 
