@@ -74,6 +74,23 @@ function genPassword(len = 16) {
   return arr.join('');
 }
 
+/* 表单里的即时强度提示：只看长度和字符种类，做个粗略判断。
+   卡片列表上的「弱 / 重复 / 长期未换」是 analyze() 那套，口径更严 */
+function strengthOf(pwd) {
+  const s = String(pwd || '');
+  const kinds = [/[a-z]/, /[A-Z]/, /\d/, /[^a-zA-Z0-9]/].filter(re => re.test(s)).length;
+  const level = s.length >= 16 && kinds >= 3 ? 3
+    : s.length >= 12 && kinds >= 2 ? 2
+      : s.length >= 8 && kinds >= 2 ? 1
+        : 0;
+  return [
+    { text: '很弱：至少 8 位，并混合大小写、数字、符号', color: 'var(--red)' },
+    { text: '一般：再长一点或补上符号会更稳', color: 'var(--amber)' },
+    { text: '较强：长度和字符种类都够了', color: 'var(--green)' },
+    { text: '很强：16 位以上，四类字符齐全', color: 'var(--green)' }
+  ][level];
+}
+
 function formHTML(v) {
   v = v || {};
   return `
@@ -86,6 +103,7 @@ function formHTML(v) {
           <input class="grow" type="text" data-f="password" value="${esc(v.password || '')}">
           <button type="button" class="btn sm" data-genpwd="1" title="生成 16 位随机密码">生成</button>
         </div>
+        <div class="hint" id="pwdHint"></div>
       </label>
     </div>
     <label class="field"><span>地址 / IP</span><input type="text" data-f="url" value="${esc(v.url || '')}"></label>
@@ -125,6 +143,19 @@ function editEntry(id, done) {
     m.body.querySelector('[data-f="password"]').value = genPassword();
     toast('已生成 16 位随机密码，记得保存', 'ok');
   });
+
+  const pwdEl = m.body.querySelector('[data-f="password"]');
+  const hintEl = m.body.querySelector('#pwdHint');
+  const updHint = () => {
+    if (!hintEl) return;
+    if (!pwdEl.value) { hintEl.textContent = '可以先留空，之后再补'; hintEl.style.color = ''; return; }
+    const k = strengthOf(pwdEl.value);
+    hintEl.textContent = k.text;
+    hintEl.style.color = k.color;
+  };
+  pwdEl.addEventListener('input', updHint);
+  gen && gen.addEventListener('click', updHint);   // 点「生成」也要立刻刷新提示
+  updHint();
 }
 
 function cardHTML(v, reveal, issues) {
