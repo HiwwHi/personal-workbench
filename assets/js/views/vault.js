@@ -216,7 +216,17 @@ export function mount(root) {
     toast(sec > 0 ? `${what}已复制，${sec} 秒后自动清空剪贴板` : `${what}已复制`, 'ok');
     if (clearTimer) clearTimeout(clearTimer);
     if (sec > 0) {
-      clearTimer = setTimeout(() => { navigator.clipboard.writeText('').catch(() => { }); }, sec * 1000);
+      clearTimer = setTimeout(async () => {
+        clearTimer = null;
+        // 到点先确认剪贴板里还是刚才那条：这段时间用户可能已经复制了别的东西，别一起清掉
+        try {
+          const now = await navigator.clipboard.readText();
+          if (now !== text) return;
+        } catch (e) {
+          // 读不到（浏览器没给读权限）就没法判断，仍然照原设定清掉：宁可误清别人的内容，也别把密码留在剪贴板
+        }
+        navigator.clipboard.writeText('').catch(() => { });
+      }, sec * 1000);
     }
   }
 
