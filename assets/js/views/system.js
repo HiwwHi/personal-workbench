@@ -297,6 +297,10 @@ export async function mount(root) {
   const rtName = await fsa.runtimeName();
   const workName = (await fsa.currentDir('work'))?.name || null;
   const knowName = (await fsa.currentDir('know'))?.name || null;
+  // 本地占用：localStorage 只有 5MB 左右，写满会静默存不下，给个能看的数字
+  const dataBytes = (() => { try { return new Blob([JSON.stringify(d)]).size; } catch { return JSON.stringify(d).length; } })();
+  const dataKb = Math.max(1, Math.round(dataBytes / 1024));
+  const draftN = ['work', 'know'].reduce((a, slot) => a + Object.keys(store.notesSlotUI(slot).drafts || {}).length, 0);
 
   /* 桌面版能弹原生选择框，浏览器版只能手填 */
   const desk = fsa.canAskPath();
@@ -542,6 +546,16 @@ export async function mount(root) {
             </label>
             <button class="btn sm" id="btnBackupNow">立即备份</button>
           </div>
+        </div>
+
+        <div class="row-between wrap" style="border-top:1px solid var(--border);margin-top:14px;padding-top:12px">
+          <div>
+            <div class="card-title">本地占用</div>
+            <div class="hint mt6">
+              数据约 <b>${dataKb} KB</b>（存在浏览器 localStorage，上限一般 5 MB）· 笔记草稿 <b>${draftN}</b> 篇
+            </div>
+          </div>
+          <button class="btn sm" id="btnClearDrafts" ${draftN ? '' : 'disabled'}>清理草稿</button>
         </div>
       </div>
 
@@ -815,6 +829,19 @@ function wire(root) {
   if (swb) swb.addEventListener('change', () => {
     store.setSetting('autoBackup', swb.checked);
     toast(swb.checked ? '已开启自动备份' : '已关闭自动备份', 'ok');
+  });
+
+  const bcd = root.querySelector('#btnClearDrafts');
+  if (bcd) bcd.addEventListener('click', async () => {
+    if (!(await confirmBox('清理笔记草稿', '草稿只是编辑过程中的临时副本，清掉不会动已经保存的笔记。确定吗？', '清理'))) return;
+    store.update(dd => {
+      ['work', 'know'].forEach(slot => {
+        const ui = (dd.notesUI.slots || {})[slot];
+        if (ui) ui.drafts = {};
+      });
+    });
+    toast('已清理草稿', 'ok');
+    mount(root);
   });
 
   const bi = root.querySelector('#btnImport');
