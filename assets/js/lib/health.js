@@ -73,23 +73,30 @@ const elapsed = {};
 let timer = null;
 let running = false;
 
-/* 今日活跃秒数：内存里累加，每 3 分钟 + 离开页面时落一份到设置里。
-   不落盘的话刷新一次就归零，首页「今天已在电脑前约 X 分钟」永远是 1 分钟。 */
+/* 今日活跃秒数：内存里累加，每 3 分钟 + 离开页面时落一份。
+   单独存一个键，不走 store：store 一写就是整份数据，
+   关页面时写一次会把另一个标签页刚改的内容盖回去。 */
+const ACTIVE_KEY = 'wb.active.v1';
 const ACTIVE_SAVE_GAP = 3 * 60 * 1000;
 let activeSavedAt = 0;
 let activeDay = todayStr();
 
 function restoreActiveSec() {
-  const a = store.settings().activeToday || {};
   activeDay = todayStr();
-  activeTodaySec = a.date === activeDay ? Math.max(0, Number(a.sec) || 0) : 0;
+  activeTodaySec = 0;
+  try {
+    const a = JSON.parse(localStorage.getItem(ACTIVE_KEY) || '{}');
+    if (a && a.date === activeDay) activeTodaySec = Math.max(0, Number(a.sec) || 0);
+  } catch { /* 读不出来就从 0 开始，不影响别的功能 */ }
 }
 
 function flushActiveSec(force = false) {
   const now = Date.now();
   if (!force && now - activeSavedAt < ACTIVE_SAVE_GAP) return;
   activeSavedAt = now;
-  store.setSetting('activeToday', { date: todayStr(), sec: Math.round(activeTodaySec) });
+  try {
+    localStorage.setItem(ACTIVE_KEY, JSON.stringify({ date: todayStr(), sec: Math.round(activeTodaySec) }));
+  } catch { /* 存不下就算了，计时本来只是参考 */ }
 }
 
 restoreActiveSec();
