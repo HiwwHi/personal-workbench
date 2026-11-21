@@ -105,8 +105,7 @@ function throttle(fn, wait) {
 const onAct = throttle(() => { lastActive = Date.now(); }, 5000);
 
 export function isActive() { return Date.now() - lastActive < IDLE_MS; }
-export function activeMinutes() { return Math.round(activeTodaySec / 60); }
-export function nextIn(rule) {
+export function activeMinutes() { return Math.round(activeTodaySec / 60); }export function nextIn(rule) {
   const left = Number(rule.interval) - (elapsed[rule.id] || 0);
   return Math.max(0, Math.round(left));
 }
@@ -203,5 +202,3 @@ export function start() {
 }
 
 export function resetTimer(id) { elapsed[id] = 0; }
-
-export function cumulative() { return { ...elapsed }; }

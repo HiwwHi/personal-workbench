@@ -46,7 +46,7 @@ export function mount(root) {
           <button class="btn sm green" data-add="eye">+1 次护眼</button>
           <button class="btn sm" id="hGoals">调整目标</button>
         </div>
-        <div class="hint mt12">今天在电脑前的累计时长约 <b>${H.activeMinutes()}</b> 分钟（从打开工作台开始算，每 20 秒统计一次；离开超过 5 分钟会自动暂停）。</div>
+        <div class="hint mt12">今天在电脑前的累计时长约 <b>${H.activeMinutes()}</b> 分钟（每 20 秒统计一次，离开超过 5 分钟自动暂停；关掉页面也会记住，不影响累计）。</div>
       </div>
 
       <div class="card">

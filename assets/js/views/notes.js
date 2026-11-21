@@ -522,7 +522,6 @@ function statLine(src) {
 }
 
 function toolbarHTML() {
-  const srcLabel = srcKey() === 'fsa' ? '本地文件夹' : srcKey() === 'mem' ? '内置笔记库' : '未连接';
   return `
     <div class="mode-switch ${mode === 'edit' ? 'edit' : ''}">
       <button data-mode="read" class="${mode === 'read' ? 'on' : ''}">阅读模式</button>

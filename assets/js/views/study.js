@@ -3,8 +3,6 @@ import { esc, uid, modal, toast, confirmBox, today, dateAdd, relDate } from '../
 
 export const meta = { key: 'study', title: '学习计划', sub: '目标 · 阶段 · 每日打卡' };
 
-export function twoLimits(d) { return d; }
-
 function form(s) {
   s = s || {};
   const stages = (s.stages || []).map(st => st.name).join('\n');

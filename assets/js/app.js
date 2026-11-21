@@ -19,7 +19,6 @@ import * as autobackup from './lib/autobackup.js';
 import * as stats from './views/stats.js';
 
 const views = { home, vault, tasks, study, skills, notes, jots, health, stats, system };
-const ORDER = ['home', 'vault', 'tasks', 'study', 'skills', 'notes', 'jots', 'health', 'system'];
 const SENSITIVE = ['vault', 'health', 'jots'];
 
 /* 搜索框空着时先给几个常用入口：比让人对着空白框想关键词快得多 */
