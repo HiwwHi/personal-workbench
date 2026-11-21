@@ -122,8 +122,11 @@ export function mount(root) {
       for (const d of seen) counts[d] = (counts[d] || 0) + 1;
     }
     const out = [];
-    for (let i = 83; i >= 0; i--) {
-      const ds = dateAdd(-i);
+    // 对齐到周一：一列 = 一个整周，一行 = 同一个星期几；不对齐的话每行只是连续 12 天，读不出「哪周忙」
+    const dow = new Date(t + 'T00:00:00').getDay() === 0 ? 7 : new Date(t + 'T00:00:00').getDay();
+    const start = dateAdd(-(11 * 7 + dow - 1));
+    for (let i = 0; i < 84; i++) {
+      const ds = dateAdd(i, start);
       const n = counts[ds] || 0;
       const lv = n === 0 ? 0 : n <= 1 ? 1 : n <= 3 ? 2 : n <= 6 ? 3 : 4;
       const bg = ['var(--surface-3)', 'rgba(95,143,113,.25)', 'rgba(95,143,113,.45)', 'rgba(95,143,113,.7)', 'var(--green)'][lv];
@@ -134,8 +137,8 @@ export function mount(root) {
 
   cards.push(`
     <div class="card">
-      <div class="card-head"><div class="card-title">近 12 周完成情况</div><span class="hint">每格一天，越绿完成越多</span></div>
-      <div style="display:grid;grid-template-columns:repeat(12,11px);gap:3px">${heatCells}</div>
+      <div class="card-head"><div class="card-title">近 12 周完成情况</div><span class="hint">一列一周 · 越绿完成越多</span></div>
+      <div style="display:grid;grid-template-rows:repeat(7,11px);grid-auto-flow:column;grid-auto-columns:11px;gap:3px">${heatCells}</div>
     </div>`);
 
   cards.push(`
