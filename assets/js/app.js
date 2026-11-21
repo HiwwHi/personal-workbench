@@ -200,12 +200,12 @@ function boot() {
   window.addEventListener('hashchange', route);
   window.addEventListener('wb:refresh', () => { if (currentKey === 'health' || currentKey === 'home') route(); });
 
-  // Alt+1..9 直达侧栏对应页面（顺序与侧栏一致）
+  // Alt+1..9 直达侧栏前 9 项，Alt+0 打第 10 项（加了「数据统计」之后 9 个位置不够用了）
   document.addEventListener('keydown', e => {
     if (!e.altKey || e.ctrlKey || e.metaKey) return;
     const n = Number(e.key);
-    if (!Number.isInteger(n) || n < 1 || n > 9) return;
-    const item = [...document.querySelectorAll('.nav-item')][n - 1];
+    if (!Number.isInteger(n) || n < 0 || n > 9) return;
+    const item = [...document.querySelectorAll('.nav-item')][n === 0 ? 9 : n - 1];
     if (!item || !item.dataset.key) return;
     e.preventDefault();
     location.hash = '#/' + item.dataset.key;
