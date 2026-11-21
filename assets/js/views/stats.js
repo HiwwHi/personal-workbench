@@ -6,8 +6,9 @@ export const meta = { key: 'stats', title: '数据统计', sub: '任务完成 ·
 
 let range = 30;        // 柱状图统计天数：7 / 30 / 90
 
-/* 近 n 天每天完成数：一次扫完历史，避免按天反复全表扫描 */
-function lastNDays(n) {
+/* 近 n 天每天完成数：一次扫完历史，避免按天反复全表扫描。
+   offset 用来取「再往前 n 天」，做同比用 */
+function lastNDays(n, offset = 0) {
   const counts = {};
   for (const x of M.allTasks()) {
     const t = x.task;
@@ -21,7 +22,7 @@ function lastNDays(n) {
   }
   const out = [];
   for (let i = n - 1; i >= 0; i--) {
-    const d = dateAdd(-i);
+    const d = dateAdd(-(i + offset));
     out.push({ d, n: counts[d] || 0 });
   }
   return out;
@@ -38,7 +39,14 @@ export function mount(root) {
 
   const days = lastNDays(range);
   const max = Math.max(1, ...days.map(x => x.n));
-  const sum30 = days.reduce((a, b) => a + b.n, 0);
+  const sumRange = days.reduce((a, b) => a + b.n, 0);
+  // 最近 7 天 vs 此前 7 天：只看柱状图看不出「比上个月好还是差」
+  const cur7 = lastNDays(7).reduce((a, b) => a + b.n, 0);
+  const prev7 = lastNDays(7, 7).reduce((a, b) => a + b.n, 0);
+  const delta = cur7 - prev7;
+  const deltaText = delta === 0 ? '（持平）'
+    : delta > 0 ? `，比此前 7 天多 <b style="color:var(--green)">${delta}</b> 项`
+      : `，比此前 7 天少 <b style="color:var(--amber)">${-delta}</b> 项`;
 
   const study = d.study || [];
   let studyDays = 0;
@@ -73,7 +81,8 @@ export function mount(root) {
         <div style="display:flex;align-items:flex-end;gap:3px;height:110px">
           ${days.map(x => `<i title="${esc(x.d)} · ${x.n} 项" style="flex:1;height:${Math.round(x.n / max * 100)}%;min-height:2px;background:var(--green);opacity:${x.n ? 0.85 : 0.15};border-radius:2px"></i>`).join('')}
         </div>
-        <div class="hint mt6">合计 <b>${sum30}</b> 项 · 单日最高 <b>${max}</b> 项 · 近 ${range} 天学习打卡 <b>${studyDays}</b> 天</div>
+        <div class="hint mt6">合计 <b>${sumRange}</b> 项 · 单日最高 <b>${max}</b> 项 · 近 ${range} 天学习打卡 <b>${studyDays}</b> 天</div>
+        <div class="hint mt6">最近 7 天完成 <b>${cur7}</b> 项，此前 7 天 <b>${prev7}</b> 项${deltaText}</div>
       </div>
 
       <div class="card">
