@@ -176,7 +176,9 @@ function cardHTML(v, reveal, issues) {
       <button class="icon-btn" data-act="reveal" title="${reveal.has(v.id) ? '隐藏' : '显示'}"><svg viewBox="0 0 24 24"><path d="M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6-10-6-10-6z"/><circle cx="12" cy="12" r="2.5"/></svg></button>
       <button class="icon-btn" data-act="copy-pwd" title="复制密码"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M15 5H6a1 1 0 0 0-1 1v9"/></svg></button>
     </div>
-    ${v.url ? `<div class="vault-field"><span class="k">地址</span><span class="v">${esc(v.url)}</span></div>` : ''}
+    ${v.url ? `<div class="vault-field"><span class="k">地址</span><span class="v">${esc(v.url)}</span>
+      <button class="icon-btn" data-act="copy-url" title="复制地址"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M15 5H6a1 1 0 0 0-1 1v9"/></svg></button>
+    </div>` : ''}
     ${v.note ? `<div class="hint" style="white-space:pre-wrap">${esc(v.note)}</div>` : ''}
     <div class="vault-foot">
       <span class="hint">${age === null ? '未记录改密时间' : age > 180 ? `<span style="color:var(--amber)">已 ${age} 天未改</span>` : `改密于 ${age} 天前`}</span>
@@ -276,6 +278,7 @@ export function mount(root) {
       case 'reveal': reveal.has(v.id) ? reveal.delete(v.id) : reveal.add(v.id); mount(root); break;
       case 'copy-acc': smartCopy(v.account || '', '账号'); break;
       case 'copy-pwd': smartCopy(v.password || '', '密码'); break;
+      case 'copy-url': smartCopy(v.url || '', '地址'); break;
       case 'edit': editEntry(v.id, () => mount(root)); break;
       case 'del':
         if (await confirmBox('删除条目', `确定删除「${v.title}」？此操作不可撤销。`)) {
