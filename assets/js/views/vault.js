@@ -159,6 +159,7 @@ function cardHTML(v, reveal, issues) {
 
 const reveal = new Set();
 let bound = false;
+let clearTimer = null;      // 放模块级：重渲染后还要能取消上一次的清空定时器
 
 export function mount(root) {
   const all = items();
@@ -207,8 +208,8 @@ export function mount(root) {
   });
   root.querySelector('#vadd').addEventListener('click', () => editEntry(null, () => mount(root)));
 
-  let clearTimer = null;
   async function smartCopy(text, what) {
+    if (!String(text || '').trim()) { toast(`这条没有填${what}`, 'warn'); return; }
     const ok = await copyText(text);
     if (!ok) { toast('复制失败，请手动选择', 'warn'); return; }
     const raw = Number(store.load().settings.clipboardClear);
