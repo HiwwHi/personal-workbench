@@ -44,6 +44,9 @@ function editProject(id, done) {
         const target = p ? d.projects.find(x => x.id === id) : null;
         if (target) {
           Object.assign(target, { name: g('name').trim(), owner: g('owner').trim(), due: g('due'), desc: g('desc').trim(), modules: finalMods });
+          // 模块改名（会换新 id）或删掉后，任务上的 moduleId 成了悬空引用：清掉，按「未指定模块」显示
+          const alive = new Set(finalMods.map(m => m.id));
+          (target.tasks || []).forEach(tk => { if (tk.moduleId && !alive.has(tk.moduleId)) tk.moduleId = ''; });
         } else {
           d.projects.unshift({ id: uid(), name: g('name').trim(), owner: g('owner').trim(), due: g('due'), desc: g('desc').trim(), modules: finalMods, tasks: [], createdAt: today() });
         }
