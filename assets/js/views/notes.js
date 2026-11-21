@@ -515,6 +515,12 @@ function renderSections() {
   }).join('');
 }
 
+/* 字数与阅读时间：按非空白字符算，中文大约 300 字 / 分钟 */
+function statLine(src) {
+  const chars = String(src || '').replace(/\s+/g, '').length;
+  return `${chars.toLocaleString('zh-CN')} 字 · 约 ${Math.max(1, Math.round(chars / 300))} 分钟`;
+}
+
 function toolbarHTML() {
   const srcLabel = srcKey() === 'fsa' ? '本地文件夹' : srcKey() === 'mem' ? '内置笔记库' : '未连接';
   return `
@@ -525,6 +531,7 @@ function toolbarHTML() {
     <span class="readonly-banner">${mode === 'edit'
       ? `<i class="dirty-dot"></i>编辑中${dirty ? ' · 有未保存改动' : ''}`
       : '只读 · 任何修改都不会自动写入磁盘'}</span>
+    <span class="hint" id="noteStat" title="按非空白字符数算，约 300 字 / 分钟">${statLine(text)}</span>
     <span class="grow"></span>
     <button class="btn sm" id="btnOutline" title="显示/隐藏大纲">大纲</button>
     <button class="btn sm" id="btnExportAI">导出给 AI</button>
@@ -710,6 +717,8 @@ function sync() {
   if (b) { b.disabled = false; b.classList.add('primary'); }
   const badge = document.querySelector('.readonly-banner');
   if (badge) badge.innerHTML = '<i class="dirty-dot"></i>编辑中 · 有未保存改动';
+  const stat = document.querySelector('#noteStat');
+  if (stat) stat.textContent = statLine(text);
 }
 
 /* 编辑模式下粘贴图片：存到笔记旁边的 assets/，正文插入相对路径 */
