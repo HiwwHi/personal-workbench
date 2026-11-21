@@ -499,7 +499,7 @@ export async function mount(root) {
         <div class="hint mt12" style="color:var(--text-3)">
           原理：本机服务（<code>server.js</code>）提供 <code>/api/open</code> / <code>/api/roots</code> / <code>/api/shell</code> 三个端点。
           浏览器 fetch 同源调用，服务端校验路径必须在已登记的根目录下才允许 spawn Cursor / VSCode。
-          服务只监听 <code>127.0.0.1:8733</code>，完全不出本机。
+          服务只监听 <code>${esc(location.host)}</code>，完全不出本机。
         </div>
       </div>
 
@@ -548,7 +548,7 @@ export async function mount(root) {
       <div class="card">
         <div class="card-head"><div class="card-title">系统信息</div><span class="hint">让我帮你改的时候，发这份就够</span></div>
         <div class="kv"><span class="k">版本</span><span class="v">${VER ? 'v' + esc(VER) : '（未知）'}</span></div>
-        <div class="kv"><span class="k">运行方式</span><span class="v">本地服务 http://127.0.0.1:8733（只监听本机）</span></div>
+        <div class="kv"><span class="k">运行方式</span><span class="v">本地服务 ${esc(location.origin)}（只监听本机）</span></div>
         <div class="kv"><span class="k">技术栈</span><span class="v">原生 ES module + CSS 变量，无框架、无构建</span></div>
         <div class="kv"><span class="k">数据存储</span><span class="v">localStorage['wb.data.v1']（按 origin 隔离）</span></div>
         <div class="kv"><span class="k">目录句柄</span><span class="v">IndexedDB 'wb-notes-fs'</span></div>
