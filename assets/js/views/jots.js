@@ -15,6 +15,17 @@ function parseTags(text) {
   return (text.match(/#([^\s#]{1,12})/g) || []).map(t => t.slice(1));
 }
 
+/* 高亮 #标签：先在原文上切分，再逐段转义。
+   反过来（先 esc 再替换）会把 &#39; 里的 #39; 当成标签，正文里的单引号就变样了 */
+function highlightTags(text) {
+  return String(text == null ? '' : text)
+    .split(/(#[^\s#]{1,12})/g)
+    .map(part => (/^#[^\s#]{1,12}$/.test(part)
+      ? `<span class="tag blue">${esc(part)}</span>`
+      : esc(part)))
+    .join('');
+}
+
 function add(text) {
   const t = text.trim();
   if (!t) return;
@@ -121,7 +132,7 @@ export function mount(root) {
       <div class="jot-card" data-id="${j.id}">
         <div class="jt">
           ${j.pinned ? '<span class="tag amber">置顶</span> ' : ''}
-          ${esc(j.text).replace(/#([^\s#]{1,12})/g, '<span class="tag blue">#$1</span>')}
+          ${highlightTags(j.text)}
           <div class="jm">
             <span>${timeAgo(j.createdAt)}</span>
             <button class="btn-ghost sm" data-act="copy">复制</button>
