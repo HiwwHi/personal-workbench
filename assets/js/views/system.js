@@ -145,7 +145,7 @@ personal-workbench/
 │     ├─ lib/health.js        弱提醒引擎
 │     ├─ lib/model.js         任务查询
 │     └─ views/*.js           每个模块一个视图，导出 { meta, mount(root) }
-└─ shots/                     八个模块的界面截图
+└─ shots/                     界面截图（含示例数据，不随仓库分发）
 \`\`\`
 
 ## 三、数据存在哪（重要）
@@ -170,6 +170,7 @@ localStorage **按 origin 隔离**：\`http://127.0.0.1:8733\` 和别的端口 =
 | 键 | 作用 |
 |---|---|
 | Ctrl + K | 全局搜索（任务/密码/笔记/Skill/随手记） |
+| Alt + 1…9 | 直达侧栏第 1~9 项；Alt + 0 是第 10 项 |
 | Ctrl + B / I / H | 笔记编辑：加粗 / 斜体 / 标题 |
 | Ctrl + E / Ctrl + L | 行内代码 / 链接 |
 | Ctrl + S | 笔记保存到磁盘（只有这个动作会写盘） |

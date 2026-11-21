@@ -52,7 +52,7 @@
 - 一键生成周报 / 月报：完成任务、项目进度、学习打卡、随手记、健康记录汇总成 markdown，直接丢给 AI 总结。
 
 **好看**
-- 13 套主题（恬淡 / 清朗 / 夜间）+ 12 种主色，全部走 CSS 变量，白天晚上都舒服；也可以跟随系统深浅色自动切换。
+- 15 套主题（恬淡 / 清朗 / 夜间）+ 12 种主色，全部走 CSS 变量，白天晚上都舒服；也可以跟随系统深浅色自动切换。
 
 **和 Cursor 打通**
 - 一键在 Cursor / VSCode 里打开当前笔记的对应行。
@@ -72,6 +72,7 @@
 | 学习笔记 | Markdown 编辑 + 大纲，直连磁盘或存内置库 |
 | 随手记 | 标签、置顶、全文搜索，可一键转成任务 |
 | 健康管理 | 喝水 / 起身 / 护眼的弱提醒，每日目标可自己调 |
+| 数据统计 | 每日完成柱状图（7 / 30 / 90 天）、项目完成率、最近 7 天与此前 7 天对比 |
 | 系统设置 | 主题、数据源、备份、迁移文档、AI 联动 |
 
 ![任务管理](docs/screenshot-tasks.png)
@@ -121,8 +122,8 @@ personal-workbench/
 │  ├─ css/main.css         全部样式，配色走 CSS 变量
 │  └─ js/
 │     ├─ app.js            路由 / 搜索面板 / 备份
-│     ├─ lib/              store / fsa / md / ui / health / model / aibridge
-│     └─ views/            9 个页面模块
+│     ├─ lib/              store / fsa / md / ui / health / model / report / autobackup / aibridge
+│     └─ views/            10 个页面模块
 ├─ scripts/selfcheck.js    自检脚本（npm run selfcheck）
 ├─ start-workbench.vbs     无黑框启动（源码方式）
 ├─ start-workbench.bat     兼容入口
