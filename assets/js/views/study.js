@@ -50,7 +50,9 @@ function heat() {
   const cols = [];
   let col = [];
   const startDate = new Date(t + 'T00:00:00');
-  startDate.setDate(startDate.getDate() - (12 * 7 - 1) + (0));
+  const dow = startDate.getDay() === 0 ? 7 : startDate.getDay();
+  // 从 11 周前的周一开始：每列正好一周（周一到周日），列首尾不再是半周
+  startDate.setDate(startDate.getDate() - (11 * 7) - (dow - 1));
   for (let i = 0; i < 12 * 7; i++) {
     const d = new Date(startDate);
     d.setDate(startDate.getDate() + i);
