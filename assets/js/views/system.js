@@ -19,8 +19,10 @@ export const THEMES = [
   { id: 'zheshi', group: '清朗', name: '赭石', desc: '暖棕，纸张感', sw: ['#F7F1E9', '#A5703C', '#6B8448', '#F6EDE1'] },
   { id: 'shanhu', group: '清朗', name: '珊瑚', desc: '砖红，温和不刺眼', sw: ['#F8F1EF', '#BE6058', '#5E8662', '#F9EBE9'] },
   { id: 'zhuyue', group: '清朗', name: '竹月', desc: '青绿，清透', sw: ['#EDF6F4', '#2F7A6E', '#438A5B', '#E3F0EC'] },
+  { id: 'qingshan', group: '清朗', name: '晴山', desc: '青绿灰，安静但不寡淡', sw: ['#F4F8F6', '#3E7C74', '#4C8A5F', '#E4F0ED'] },
   { id: 'yehang', group: '夜间', name: '夜航', desc: '深蓝灰，晚上用', sw: ['#1B2025', '#6FA3C4', '#79B08A', '#25323C'], dark: true },
-  { id: 'moye', group: '夜间', name: '墨夜', desc: '中性深灰，护眼', sw: ['#1E1E20', '#93A7BE', '#84AE8E', '#2A2F35'], dark: true }
+  { id: 'moye', group: '夜间', name: '墨夜', desc: '中性深灰，护眼', sw: ['#1E1E20', '#93A7BE', '#84AE8E', '#2A2F35'], dark: true },
+  { id: 'shentan', group: '夜间', name: '深潭', desc: '深青灰，比夜航更沉', sw: ['#161F20', '#6FB3A5', '#7BB694', '#223432'], dark: true }
 ];
 
 export const THEME_GROUPS = ['恬淡', '清朗', '夜间'];

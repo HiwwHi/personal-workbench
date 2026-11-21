@@ -456,6 +456,41 @@ svg.mini { width: 15px; height: 15px; }
   --on-accent: #FFFFFF;
   --on-green: #FFFFFF;
 }
+[data-theme="qingshan"] {
+  --bg: #F4F8F6;
+  --surface: #FFFFFF;
+  --surface-2: #EAF1EE;
+  --surface-3: #DFE9E5;
+  --border: #D8E4DF;
+  --border-2: #C2D3CD;
+  --text: #23302C;
+  --text-2: #576661;
+  --text-3: #87968F;
+  --accent: #3E7C74;
+  --accent-soft: #E4F0ED;
+  --accent-line: #B7D5CF;
+  --accent-hover: #336862;
+  --green: #4C8A5F;
+  --green-soft: #E8F1EA;
+  --green-hover: #3F7550;
+  --line-green: #C6DCCD;
+  --amber: #A6813A;
+  --amber-soft: #F7F0E0;
+  --line-amber: #E5D6B6;
+  --red: #AB6154;
+  --red-soft: #F8EDEA;
+  --line-red: #E4CCC6;
+  --heat-1: #CFE3D8; --heat-2: #A3C8B4; --heat-3: #71A78E; --heat-4: #3E7C74;
+  --pane-bg: #F8FBFA;
+  --focus-bg: #F6FAF8;
+  --quote-bg: #F7FAF9;
+  --nudge-bar: #B3D2C3;
+  --ok-text: #2C5C46;
+  --warn-text: #86412F;
+  --mask: rgba(35,48,44,.18);
+  --on-accent: #FFFFFF;
+  --on-green: #FFFFFF;
+}
 [data-theme="yehang"] {
   --bg: #1B2025;
   --surface: #232A31;
@@ -525,6 +560,41 @@ svg.mini { width: 15px; height: 15px; }
   --mask: rgba(0,0,0,.45);
   --on-accent: #12202A;
   --on-green: #14201A;
+}
+[data-theme="shentan"] {
+  --bg: #161F20;
+  --surface: #1E2A2B;
+  --surface-2: #253334;
+  --surface-3: #2D3E3F;
+  --border: #334546;
+  --border-2: #415556;
+  --text: #DEE7E4;
+  --text-2: #A4B3AE;
+  --text-3: #798A85;
+  --accent: #6FB3A5;
+  --accent-soft: #223432;
+  --accent-line: #3A5754;
+  --accent-hover: #88C7B9;
+  --green: #7BB694;
+  --green-soft: #22332A;
+  --green-hover: #90C8A6;
+  --line-green: #375244;
+  --amber: #D2A961;
+  --amber-soft: #332B1E;
+  --line-amber: #55462A;
+  --red: #D18C82;
+  --red-soft: #362726;
+  --line-red: #5A403C;
+  --heat-1: #26382F; --heat-2: #355443; --heat-3: #4F8A6A; --heat-4: #7BB694;
+  --pane-bg: #1B2526;
+  --focus-bg: #1D2829;
+  --quote-bg: #1D2728;
+  --nudge-bar: #44624F;
+  --ok-text: #9CC7AC;
+  --warn-text: #E0A79F;
+  --mask: rgba(0,0,0,.5);
+  --on-accent: #10201E;
+  --on-green: #10201A;
 }
 
 /* ---------- 主题选择卡 ---------- */
@@ -913,9 +983,9 @@ section.doc-sec:hover .sec-tools { opacity: 1; }
 .eye-box { padding: 14px; border-radius: var(--r-md); background: var(--green-soft); border: 1px solid var(--line-green); font-size: 13px; color: var(--text-2); }
 .eye-box.hot { background: var(--amber-soft); border-color: var(--line-amber); }
 
-[data-theme="yehang"] .toast, [data-theme="moye"] .toast,
-[data-theme="yehang"] .modal, [data-theme="moye"] .modal,
-[data-theme="yehang"] .palette, [data-theme="moye"] .palette {
+[data-theme="yehang"] .toast, [data-theme="moye"] .toast, [data-theme="shentan"] .toast,
+[data-theme="yehang"] .modal, [data-theme="moye"] .modal, [data-theme="shentan"] .modal,
+[data-theme="yehang"] .palette, [data-theme="moye"] .palette, [data-theme="shentan"] .palette {
   box-shadow: 0 12px 36px rgba(0,0,0,.5);
 }
-[data-theme="yehang"] code, [data-theme="moye"] code { background: var(--surface-3); }
+[data-theme="yehang"] code, [data-theme="moye"] code, [data-theme="shentan"] code { background: var(--surface-3); }
