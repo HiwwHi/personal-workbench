@@ -22,6 +22,15 @@ const views = { home, vault, tasks, study, skills, notes, jots, health, stats, s
 const ORDER = ['home', 'vault', 'tasks', 'study', 'skills', 'notes', 'jots', 'health', 'system'];
 const SENSITIVE = ['vault', 'health', 'jots'];
 
+/* 搜索框空着时先给几个常用入口：比让人对着空白框想关键词快得多 */
+const QUICK = [
+  { kind: '入口', title: '看今天要做什么', path: '任务管理', go: '#/tasks' },
+  { kind: '入口', title: '记一条随手记', path: '回车即存', go: '#/jots', sensitive: true },
+  { kind: '入口', title: '打开学习笔记', path: '笔记库', go: '#/notes' },
+  { kind: '入口', title: '看完成情况统计', path: '数据统计', go: '#/stats' },
+  { kind: '入口', title: '备份与导出', path: '系统设置', go: '#/system' },
+];
+
 let currentKey = null;
 
 async function route() {
@@ -123,6 +132,8 @@ function openPalette() {
   let index = [];
   let rows = [];
   let cur = 0;
+  // 隐私模式下别把「随手记」这个入口摆出来——点进去也会被弹回首页
+  const quick = store.settings().privacy ? QUICK.filter(i => !i.sensitive) : QUICK;
 
   if (indexCache) { index = indexCache; paint(''); }
   buildIndex().then(items => {
@@ -136,9 +147,11 @@ function openPalette() {
 
   function paint(q) {
     const hay = q.toLowerCase();
-    const res = index.filter(i => [i.kind, i.title, i.path, i.body || ''].join(' ').toLowerCase().includes(hay)).slice(0, 40);
+    const res = hay
+      ? index.filter(i => [i.kind, i.title, i.path, i.body || ''].join(' ').toLowerCase().includes(hay)).slice(0, 40)
+      : quick;
     rows = res;
-    input.placeholder = q ? `搜索（${res.length} 条匹配）` : '搜索任务 / 笔记 / 密码 / Skill…';
+    input.placeholder = hay ? `搜索（${res.length} 条匹配）` : '输入关键词搜索，或直接选下面一项';
     if (!res.length) { list.innerHTML = '<div class="empty">没有匹配项</div>'; return; }
     cur = 0;
     list.innerHTML = res.map((i, n) => `<div class="palette-row ${n === 0 ? 'sel' : ''}" data-n="${n}" data-go="${i.go}" data-slot="${i.slot || ''}">
