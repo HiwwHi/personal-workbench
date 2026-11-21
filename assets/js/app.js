@@ -129,6 +129,9 @@ function openPalette() {
     index = items;
     indexCache = items;
     paint(input.value);          // 重建完再按当前关键词刷一次
+  }).catch(() => {
+    // 笔记文件夹权限失效 / 句柄丢了时 listFiles 会抛：说一声，别让面板空着让人以为没数据
+    if (!index.length) list.innerHTML = '<div class="empty">索引没建起来（多半是笔记文件夹权限失效），刷新后再试</div>';
   });
 
   function paint(q) {
