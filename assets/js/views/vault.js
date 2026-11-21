@@ -237,7 +237,10 @@ export function mount(root) {
     const btn = e.target.closest('[data-act]');
     if (!btn) return;
     const card = btn.closest('.vault-card');
+    if (!card) return;
     const v = items().find(x => x.id === card.dataset.id);
+    // 另一个标签页删掉了这条时，v 会是 undefined，继续往下点会直接抛 TypeError
+    if (!v) { toast('这条记录已不存在，刷新一下再试', 'warn'); mount(root); return; }
     switch (btn.dataset.act) {
       case 'reveal': reveal.has(v.id) ? reveal.delete(v.id) : reveal.add(v.id); mount(root); break;
       case 'copy-acc': smartCopy(v.account || '', '账号'); break;
