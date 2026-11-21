@@ -324,11 +324,12 @@ function chapterBody(sec) {
   return mdmod.trimLines(sec.lines);
 }
 
-function exportChapter(sec) {
+async function exportChapter(sec) {
   const base = current ? current.name.replace(/\.md$/i, '') : '笔记';
   const name = `${base}-${sanitize(sec.title)}.md`;
   const body = chapterBody(sec);
-  const hasRt = fsa.runtimeReady();
+  // runtimeReady 是异步的：不 await 会拿到 Promise（永远为真），没设目录时按钮文案会骗人
+  const hasRt = await fsa.runtimeReady();
   modal({
     title: '导出章节 · ' + sec.title, wide: true,
     okText: hasRt ? '保存到中间文件目录' : '下载 md 文件',
