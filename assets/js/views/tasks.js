@@ -142,9 +142,8 @@ function taskRow(x, showPrj = true, forDate = '') {
       <div class="${done ? 'done-text' : ''}">${t.priority === 'high' ? '<span class="tag red">重要</span> ' : ''}${esc(t.title)}</div>
       <div class="hint">
         ${showPrj ? esc(x.project.name) + ' · ' : ''}${x.module ? esc(x.module.name) + ' · 对接 ' + (x.module.owner ? esc(x.module.owner) : '未指定') : '未指定模块'}
-        ${t.due ? ' · ' + esc(relDate(t.due)) : ' · 待安排'}
+        ${t.due ? ` · <span${overNow ? ' style="color:var(--red)"' : ''}>${esc(relDate(t.due))}</span>` : ' · 待安排'}
         ${rep}
-        ${overNow ? ' · <span style="color:var(--red)">已逾期</span>' : ''}
       </div>
     </div>
     <span class="actions">
