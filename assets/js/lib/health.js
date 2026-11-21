@@ -73,6 +73,27 @@ const elapsed = {};
 let timer = null;
 let running = false;
 
+/* 今日活跃秒数：内存里累加，每 3 分钟 + 离开页面时落一份到设置里。
+   不落盘的话刷新一次就归零，首页「今天已在电脑前约 X 分钟」永远是 1 分钟。 */
+const ACTIVE_SAVE_GAP = 3 * 60 * 1000;
+let activeSavedAt = 0;
+let activeDay = todayStr();
+
+function restoreActiveSec() {
+  const a = store.settings().activeToday || {};
+  activeDay = todayStr();
+  activeTodaySec = a.date === activeDay ? Math.max(0, Number(a.sec) || 0) : 0;
+}
+
+function flushActiveSec(force = false) {
+  const now = Date.now();
+  if (!force && now - activeSavedAt < ACTIVE_SAVE_GAP) return;
+  activeSavedAt = now;
+  store.setSetting('activeToday', { date: todayStr(), sec: Math.round(activeTodaySec) });
+}
+
+restoreActiveSec();
+
 function throttle(fn, wait) {
   let last = 0;
   return function (...a) {
@@ -134,6 +155,9 @@ function fire(rule) {
 }
 
 function tick() {
+  // 跨过零点就从头算，别把昨天的时长算进今天
+  const day = todayStr();
+  if (day !== activeDay) { activeDay = day; activeTodaySec = 0; activeSavedAt = 0; }
   const st = store.load().health.settings || {};
   if (!st.enabled) return;
   if (st.pausedUntil && Date.now() < Number(st.pausedUntil)) return;   // 临时暂停
@@ -142,6 +166,7 @@ function tick() {
     return;
   }
   activeTodaySec += TICK_MS / 1000;
+  flushActiveSec();
   const secs = TICK_MS / 1000 / 60;
   for (const r of rules()) {
     if (!r.enabled) continue;
@@ -167,6 +192,11 @@ export function start() {
   running = true;
   ['mousemove', 'keydown', 'mousedown', 'wheel', 'touchstart', 'scroll'].forEach(ev =>
     window.addEventListener(ev, onAct, { passive: true }));
+  // 关窗口 / 切到后台时补存一次，别让最后几分钟白算
+  window.addEventListener('pagehide', () => flushActiveSec(true));
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') flushActiveSec(true);
+  });
   timer = setInterval(tick, TICK_MS);
 }
 
