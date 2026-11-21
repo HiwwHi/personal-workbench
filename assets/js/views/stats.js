@@ -30,6 +30,8 @@ function lastNDays(n) {
 export function mount(root) {
   const d = store.load();
   const all = M.allTasks();
+  // 隐私模式下密码 / 随手记的入口都藏了，统计页还把它们「有几条」摆出来就不合适
+  const hide = !!store.settings().privacy;
   const doneN = all.filter(x => M.isDone(x.task)).length;
   const todoN = M.dueToday().length;
   const overN = M.overdue().length;
@@ -85,10 +87,11 @@ export function mount(root) {
     </div>
 
     <div class="grid grid-3 mt12">
-      <div class="stat"><div class="stat-num">${(d.jots || []).filter(j => !j.archived).length}</div><div class="stat-label">随手记</div></div>
-      <div class="stat"><div class="stat-num">${(d.vault || []).length}</div><div class="stat-label">账号密码</div></div>
+      <div class="stat"><div class="stat-num">${hide ? '—' : (d.jots || []).filter(j => !j.archived).length}</div><div class="stat-label">随手记</div></div>
+      <div class="stat"><div class="stat-num">${hide ? '—' : (d.vault || []).length}</div><div class="stat-label">账号密码</div></div>
       <div class="stat"><div class="stat-num">${(d.skills || []).length}</div><div class="stat-label">Skill</div></div>
     </div>
+    ${hide ? '<div class="hint mt6">隐私模式已开启，密码与随手记的数量不显示。</div>' : ''}
   `;
 
   root.querySelectorAll('[data-range]').forEach(b => b.addEventListener('click', () => {
