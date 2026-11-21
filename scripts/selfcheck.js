@@ -61,6 +61,12 @@ function check(name, ok, detail) { results.push({ name, ok: !!ok, detail: detail
     const src = await request('GET', '/server.js');
     check('源码不对外提供', src.status === 404);
 
+    const pkg = await request('GET', '/package.json');
+    check('package.json 不对外提供', pkg.status === 404);
+
+    const changelog = await request('GET', '/CHANGELOG.md');
+    check('仓库文档不对外提供', changelog.status === 404);
+
     const noToken = await request('POST', '/api/roots', {
       headers: { 'Content-Type': 'application/json' },
       body: '{"add":[]}'

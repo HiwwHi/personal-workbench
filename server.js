@@ -362,7 +362,7 @@ const server = http.createServer(async (req, res) => {
     if (rel.startsWith('..') || path.isAbsolute(rel)) { res.writeHead(403).end('forbidden'); return; }
     const segs = rel.split(/[\\/]/);
     // 隐藏文件不对外提供（白名单、.git 等）
-    if (segs.some(seg => seg.startsWith('.')) || isDeniedStatic(segs)) {
+    if (segs.some(seg => seg.startsWith('.')) || !isAllowedStatic(segs)) {
       return res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' }).end('404');
     }
     // 首页要带上本次启动的令牌（放在 meta 里，不破坏 CSP）
@@ -387,13 +387,13 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-/* 源码与启动脚本不通过 HTTP 暴露 */
-const DENY_FILES = new Set(['server.js', 'package.json', 'package-lock.json', 'tray.ps1', 'start-workbench.bat', 'start-workbench.vbs', 'readme.md']);
-const DENY_DIRS = new Set(['electron', 'node_modules', 'release', 'docs', 'shots']);
-function isDeniedStatic(segs) {
-  const first = String(segs[0] || '').toLowerCase();
-  if (DENY_DIRS.has(first)) return true;
-  return segs.length === 1 && DENY_FILES.has(first);
+/* 静态资源白名单：只放行页面外壳、图标和 assets/。
+   原来是「禁止清单」，加个 CHANGELOG.md 之类的新文件就会顺手漏出去 */
+const ALLOW_FILES = new Set(['index.html', 'app.ico']);
+function isAllowedStatic(segs) {
+  const first = String(segs[0] || '');
+  if (segs.length === 1) return ALLOW_FILES.has(first);
+  return first === 'assets';
 }
 
 /* 建目录但不跟随链接：已存在且是符号链接/联接就报错，避免被引到别处写文件 */
