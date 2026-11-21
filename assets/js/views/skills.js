@@ -78,7 +78,7 @@ function edit(id, done) {
 function runModal(s, done) {
   const vals = {};
   (s.inputs || []).forEach(i => vals[i.name] = '');
-  modal({
+  const m = modal({
     title: '执行 · ' + s.name, wide: true, okText: '复制完整指令给 AI',
     done,
     body: `
@@ -111,6 +111,21 @@ function runModal(s, done) {
       copyText(txt).then(ok => toast(ok ? '已复制到剪贴板，去对话里粘贴即可' : '复制失败', ok ? 'ok' : 'warn'));
       return true;
     }
+  });
+
+  // 弹窗里的步骤勾选框：卡片那套事件委托挂在视图 root 上，管不到弹窗里的 DOM
+  m.body.addEventListener('click', e => {
+    const c = e.target.closest('[data-step]');
+    if (!c) return;
+    let next = false;
+    store.update(d => {
+      const sk = d.skills.find(x => x.id === s.id);
+      const st = sk && (sk.steps || []).find(x => x.id === c.dataset.step);
+      if (st) { st.done = !st.done; next = st.done; }
+    });
+    c.classList.toggle('on', next);
+    const row = c.closest('.skill-step');
+    if (row) row.classList.toggle('ok', next);
   });
 }
 
