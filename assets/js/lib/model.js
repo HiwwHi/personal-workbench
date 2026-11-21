@@ -27,7 +27,7 @@ const isWeekend = date => {
 };
 
 /* 工作日任务在周末不出现（不算没做完） */
-function restsOn(t, date) {
+export function restsOn(t, date) {
   return t.repeat === 'weekday' && isWeekend(date);
 }
 

@@ -167,7 +167,7 @@ function calHtml() {
   for (let i = 0; i < startPad; i++) cells.push('<div class="cal-cell pad"></div>');
   for (let d = 1; d <= days; d++) {
     const ds = `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-    const dueN = M.allTasks().filter(x => x.task.due === ds).length;
+    const dueN = M.allTasks().filter(x => x.task.due === ds && !M.restsOn(x.task, ds)).length;
     const doneN = M.historyOn(ds).length;
     cells.push(`<div class="cal-cell ${ds === today() ? 'today' : ''} ${ds === selDate ? 'sel' : ''}" data-date="${ds}">
       <div class="cal-day">${d}</div>
@@ -224,7 +224,8 @@ export function mount(root) {
       </div>`).join('') : '<div class="card"><div class="empty">未来 7 天没有排期任务</div></div>';
   } else {
     const sel = M.historyOn(selDate).filter(x => !prjFilter || x.project.id === prjFilter);
-    const due_sel = M.allTasks().filter(x => x.task.due === selDate && (!prjFilter || x.project.id === prjFilter));
+    // 每个工作日任务在周末是「休息」，不该出现在这天的到期清单里（和「近期」口径一致）
+    const due_sel = M.allTasks().filter(x => x.task.due === selDate && !M.restsOn(x.task, selDate) && (!prjFilter || x.project.id === prjFilter));
     body = `
       <div class="card">
         <div class="card-head">
