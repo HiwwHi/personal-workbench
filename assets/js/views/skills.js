@@ -12,10 +12,16 @@ const PREFACE = `# AI 使用说明
 
 `;
 
+/* YAML 头的值统一加双引号：名字里带 : 或 # 时，不加引号 frontmatter 会解析失败 */
+function yamlStr(v) {
+  const s = String(v == null ? '' : v).replace(/\s+/g, ' ').trim();
+  return '"' + s.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"';
+}
+
 export function toSkillMd(s) {
   return `---
-name: ${s.name}
-description: ${s.description || ''}
+name: ${yamlStr(s.name)}
+description: ${yamlStr(s.description || '')}
 ---
 
 # ${s.name}
