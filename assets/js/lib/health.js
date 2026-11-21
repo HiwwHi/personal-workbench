@@ -158,6 +158,8 @@ function tick() {
   // 跨过零点就从头算，别把昨天的时长算进今天
   const day = todayStr();
   if (day !== activeDay) { activeDay = day; activeTodaySec = 0; activeSavedAt = 0; }
+  // 隐私模式：设置页写着「健康提醒也会停」，那就真的停——不然旁边有人时照样弹「起来喝水」
+  if (store.settings().privacy) return;
   const st = store.load().health.settings || {};
   if (!st.enabled) return;
   if (st.pausedUntil && Date.now() < Number(st.pausedUntil)) return;   // 临时暂停
