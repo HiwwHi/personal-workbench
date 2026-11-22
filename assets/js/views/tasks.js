@@ -159,6 +159,17 @@ function monthInfo() {
   return cal;
 }
 
+/* 换月之后把选中的日期挪进当前显示的月，
+   否则日历显示 10 月、右侧明细还是 11 月 21 日，两边对不上 */
+function clampSelToMonth() {
+  const { y, m } = monthInfo();
+  const cur = new Date(selDate + 'T00:00:00');
+  if (cur.getFullYear() === y && cur.getMonth() === m) return;
+  const last = new Date(y, m + 1, 0).getDate();
+  const day = Math.min(cur.getDate() || 1, last);
+  selDate = `${y}-${String(m + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+}
+
 function calHtml() {
   const { y, m } = cal;
   const first = new Date(y, m, 1);
@@ -461,6 +472,7 @@ export function mount(root) {
       if (nm < 0) { nm = 11; ny--; } if (nm > 11) { nm = 0; ny++; }
       cal = { y: ny, m: nm };
     }
+    clampSelToMonth();
     mount(root);
   }));
   root.querySelectorAll('.cal-cell[data-date]').forEach(c => c.addEventListener('click', () => { selDate = c.dataset.date; mount(root); }));
