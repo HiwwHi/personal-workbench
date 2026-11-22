@@ -204,18 +204,30 @@ export function mount(root) {
   if (filter.group !== '全部' && !gps.includes(filter.group)) filter.group = '全部';
   const chk = analyze(all);
   const flagTotal = chk.weak + chk.dup + chk.old;
+  const sortBy = store.settings().vaultSort || 'updated';
   const list = all.filter(v => {
     if (filter.group !== '全部' && (v.group || '未分组') !== filter.group) return false;
     if (!filter.q) return true;
     const q = filter.q.toLowerCase();
     return [v.title, v.account, v.url, v.note, v.group].some(x => (x || '').toLowerCase().includes(q));
   });
+  const stampOf = v => String(v.updatedAt || v.createdAt || '');
+  if (sortBy === 'title') list.sort((a, b) => String(a.title || '').localeCompare(String(b.title || ''), 'zh'));
+  else if (sortBy === 'group') {
+    list.sort((a, b) => String(a.group || '未分组').localeCompare(String(b.group || '未分组'), 'zh')
+      || String(a.title || '').localeCompare(String(b.title || ''), 'zh'));
+  } else list.sort((a, b) => stampOf(b).localeCompare(stampOf(a)));   // 默认：最近改过的在前
 
   root.innerHTML = `
     <div class="row-between mb12 wrap">
       <div class="row wrap grow">
         <input type="text" id="vq" placeholder="搜索标题 / 账号 / 地址 / 备注" value="${esc(filter.q)}" style="max-width:280px">
         <select id="vg" style="max-width:150px">${gps.map(g => `<option ${g === filter.group ? 'selected' : ''}>${esc(g)}</option>`).join('')}</select>
+        <select id="vsort" style="max-width:130px" title="排序方式">
+          <option value="updated" ${sortBy === 'updated' ? 'selected' : ''}>最近更新</option>
+          <option value="title" ${sortBy === 'title' ? 'selected' : ''}>按标题</option>
+          <option value="group" ${sortBy === 'group' ? 'selected' : ''}>按分组</option>
+        </select>
       </div>
       <div class="row">
         <button class="btn primary" id="vadd"><svg viewBox="0 0 24 24" class="mini"><path d="M12 5v14M5 12h14"/></svg>新增条目</button>
@@ -242,6 +254,10 @@ export function mount(root) {
     mount(root);
   });
   root.querySelector('#vadd').addEventListener('click', () => editEntry(null, () => mount(root)));
+  root.querySelector('#vsort').addEventListener('change', e => {
+    store.setSetting('vaultSort', e.target.value);
+    mount(root);
+  });
 
   async function smartCopy(text, what) {
     if (!String(text || '').trim()) { toast(`这条没有填${what}`, 'warn'); return; }
