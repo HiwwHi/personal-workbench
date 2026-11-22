@@ -73,7 +73,7 @@ function toTask(j, root) {
         p.tasks = p.tasks || [];
         p.tasks.unshift({
           id: uid(), title, due: today(), moduleId: '', repeat: 'none', priority: 'normal',
-          done: false, doneAt: null, lastDone: null, history: []
+          done: false, doneAt: null, lastDone: null, history: [], createdAt: today()
         });
         const src = d.jots.find(x => x.id === j.id);
         if (src) { src.archived = true; src.convertedAt = today(); }

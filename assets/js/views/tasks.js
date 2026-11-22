@@ -117,7 +117,8 @@ function editTask(projectId, taskId, defaultDue, done) {
         } else {
           prj.tasks.push({
             id: uid(), title: g('title'), moduleId: g('moduleId'), due: g('due'),
-            repeat: g('repeat'), priority: g('priority'), done: false, doneAt: null, lastDone: null, history: []
+            repeat: g('repeat'), priority: g('priority'), done: false, doneAt: null, lastDone: null, history: [],
+            createdAt: today()      // 给周报统计「本周新增」用
           });
         }
       });
@@ -443,7 +444,7 @@ export function mount(root) {
         store.update(d => {
           const prj = d.projects.find(x => x.id === gid);
           prj.tasks = prj.tasks || [];
-          prj.tasks.push({ id: uid(), title, due, moduleId: '', repeat: 'none', priority: 'normal', done: false, doneAt: null, lastDone: null, history: [] });
+          prj.tasks.push({ id: uid(), title, due, moduleId: '', repeat: 'none', priority: 'normal', done: false, doneAt: null, lastDone: null, history: [], createdAt: today() });
         });
         toast('已添加', 'ok'); return true;
       },
