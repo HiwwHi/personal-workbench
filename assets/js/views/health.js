@@ -61,7 +61,7 @@ export function mount(root) {
               <div>${esc(r.name)} · 每 ${r.interval} 分钟</div>
               <div class="hint">${esc(r.msg || '（无文案）')}</div>
             </div>
-            <span class="hint">${H.nextIn(r)} 分钟后</span>
+            <span class="hint">${r.enabled ? H.nextIn(r) + ' 分钟后' : '已停用'}</span>
             <button class="btn sm" data-test="${r.id}">试试</button>
             <button class="btn sm" data-reset="${r.id}">重新计时</button>
             <button class="icon-btn" data-redit="${r.id}"><svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg></button>
