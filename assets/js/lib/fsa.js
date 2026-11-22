@@ -249,6 +249,16 @@ export async function listRuntime(sub) {
   return out.sort();
 }
 
+/* 读运行时目录里的一个文件（列自动备份、从备份恢复要用） */
+export async function readRuntime(sub, name) {
+  const root = await restoreDir('runtime');
+  if (!root) throw new NoRuntimeError();
+  const dir = sub ? await resolvePath(root, sub) : root;
+  const fh = await dir.getFileHandle(name);
+  const f = await fh.getFile();
+  return { text: await f.text(), modified: f.lastModified };
+}
+
 export async function removeRuntime(sub, name) {
   const root = await restoreDir('runtime');
   if (!root) return false;

@@ -551,6 +551,7 @@ export async function mount(root) {
               <input type="checkbox" id="swAutoBackup" ${st.autoBackup === false ? '' : 'checked'}> 开启
             </label>
             <button class="btn sm" id="btnBackupNow">立即备份</button>
+            <button class="btn sm" id="btnListBackups">从备份恢复</button>
           </div>
         </div>
 
@@ -830,6 +831,46 @@ function wire(root) {
   const bnow = root.querySelector('#btnBackupNow');
   if (bnow) bnow.addEventListener('click', async () => {
     try { await autobackup.backupNow(); mount(root); } catch (e) { toast(e.message, 'warn'); }
+  });
+
+  const blist = root.querySelector('#btnListBackups');
+  if (blist) blist.addEventListener('click', async () => {
+    if (!(await fsa.runtimeReady())) { toast('还没设置「中间文件目录」，自动备份需要一个落脚点', 'warn'); return; }
+    let files = [];
+    try {
+      files = (await fsa.listRuntime(autobackup.SUB)).filter(n => /\.json$/i.test(n)).sort().reverse();
+    } catch (e) {
+      toast('读不到备份目录，先设置「中间文件目录」', 'warn');
+      return;
+    }
+    if (!files.length) { toast('还没有自动备份', 'warn'); return; }
+    const m = modal({
+      title: '从自动备份恢复', wide: true, okText: '关闭', cancelText: '关闭',
+      body: `<div class="hint mb12">共 ${files.length} 份，都在「中间文件目录/${esc(autobackup.SUB)}/」。
+        恢复会覆盖当前数据，建议先把现在这份导出一遍。</div>
+        <div style="max-height:50vh;overflow:auto">
+          ${files.map((n, i) => `<div class="list-item">
+            <div class="grow" style="font-size:12.5px">${esc(n)}</div>
+            <button class="btn sm" data-restore="${i}">恢复这份</button>
+          </div>`).join('')}
+        </div>`
+    });
+    m.body.addEventListener('click', async e => {
+      const b = e.target.closest('[data-restore]');
+      if (!b) return;
+      const name = files[Number(b.dataset.restore)];
+      if (!name) return;
+      if (!(await confirmBox('恢复这份备份', `用「${name}」覆盖当前全部数据？`, '恢复'))) return;
+      try {
+        const { text } = await fsa.readRuntime(autobackup.SUB, name);
+        store.importAll(text);
+        toast('已恢复，页面马上刷新', 'ok');
+        m.close();
+        mount(root);
+      } catch (err) {
+        toast('恢复失败：' + ((err && err.message) || err), 'warn');
+      }
+    });
   });
 
   const swb = root.querySelector('#swAutoBackup');
