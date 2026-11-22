@@ -994,3 +994,14 @@ section.doc-sec:hover .sec-tools { opacity: 1; }
   box-shadow: 0 12px 36px rgba(0,0,0,.5);
 }
 [data-theme="yehang"] code, [data-theme="moye"] code, [data-theme="shentan"] code { background: var(--surface-3); }
+
+/* ---------- 减少动效 ---------- */
+/* 系统里开了「减少动画」就不要再淡入淡出：提醒卡、toast、弹窗都受影响 */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

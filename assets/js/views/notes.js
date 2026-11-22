@@ -315,10 +315,12 @@ async function openFile(f, section) {
 function scrollToHeading(title) {
   requestAnimationFrame(() => {
     if (mode !== 'read') return;
+    // 系统开了「减少动效」就直接跳过去，别滑
+    const smooth = !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
     const secs = document.querySelectorAll('section.doc-sec');
     for (const s of secs) {
       if (s.dataset.title === title) {
-        s.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        s.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'start' });
         document.querySelectorAll('section.doc-sec').forEach(x => x.classList.remove('focus'));
         s.classList.add('focus');
         break;
