@@ -28,6 +28,7 @@ const QUICK = [
   { kind: '入口', title: '打开学习笔记', path: '笔记库', go: '#/notes' },
   { kind: '入口', title: '看完成情况统计', path: '数据统计', go: '#/stats' },
   { kind: '入口', title: '备份与导出', path: '系统设置', go: '#/system' },
+  { kind: '入口', title: '看键盘快捷键', path: '按 ? 也能打开', act: 'shortcuts' },
 ];
 
 let currentKey = null;
@@ -53,6 +54,27 @@ async function route() {
 }
 
 function refresh() { route(); }
+
+/* 快捷键帮助：手离开键盘久了会忘，按 ? 随时查 */
+function shortcutsModal() {
+  const rows = [
+    ['Ctrl + K', '全局搜索（任务 / 笔记 / 密码 / Skill）'],
+    ['Alt + 1…9', '跳到侧栏第 1~9 项'],
+    ['Alt + 0', '跳到第 10 项（系统设置）'],
+    ['Ctrl + S', '笔记编辑时保存到磁盘'],
+    ['Ctrl + B / I / H', '笔记编辑：加粗 / 斜体 / 标题'],
+    ['Ctrl + E / Ctrl + L', '笔记编辑：行内代码 / 链接'],
+    ['Tab / Shift + Tab', '笔记缩进 / 反缩进'],
+    ['?', '打开这份帮助'],
+  ];
+  modal({
+    title: '键盘快捷键', wide: true, okText: '知道了', cancelText: '关闭',
+    body: `<div class="hint mb12">在输入框里按这些键仍是正常输入，只有焦点不在输入框时才会触发。</div>
+      ${rows.map(([k, d]) => `<div class="row-between" style="padding:6px 0;border-bottom:1px dashed var(--border)">
+        <code>${esc(k)}</code><span class="hint">${esc(d)}</span>
+      </div>`).join('')}`
+  });
+}
 
 function backupModal() {
   modal({
@@ -168,6 +190,7 @@ function openPalette() {
   function openResult(n) {
     const i = rows[n];
     if (!i) return;
+    if (i.act === 'shortcuts') { close(); shortcutsModal(); return; }
     if (i.slot) {
       store.setSetting('notesSlot', i.slot);
       if (String(i.kind).slice(-2) === '笔记') {
@@ -238,6 +261,17 @@ function boot() {
       const inEditor = document.querySelector('#mdCode');
       if (!inEditor) e.preventDefault();
     }
+  });
+
+  // ? 打开快捷键帮助：正在输入框里打字、或搜索面板开着时不抢
+  document.addEventListener('keydown', e => {
+    if (e.key !== '?' || e.ctrlKey || e.metaKey || e.altKey) return;
+    const el = document.activeElement;
+    if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) return;
+    const pal = document.querySelector('#palette');
+    if (pal && !pal.hidden) return;
+    e.preventDefault();
+    shortcutsModal();
   });
 
   route();
