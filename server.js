@@ -309,7 +309,9 @@ const server = http.createServer(async (req, res) => {
         const t = path.resolve(String(payload.target));
         if (!inRoots(t)) return send(res, 403, { error: '目标不在信任根目录下' });
         if (!fs.existsSync(t)) return send(res, 404, { error: '路径不存在' });
-        spawn('explorer.exe', [t], { detached: true, stdio: 'ignore' }).unref();
+        // 文件用 /select 定位并选中，目录直接打开
+        const isFile = (() => { try { return fs.statSync(t).isFile(); } catch { return false; } })();
+        spawn('explorer.exe', [isFile ? '/select,' + t : t], { detached: true, stdio: 'ignore' }).unref();
         return send(res, 200, { ok: true });
       }
       if (op === 'install-cursor-user-skills') {

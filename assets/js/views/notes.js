@@ -594,6 +594,7 @@ function toolbarHTML() {
     <button class="btn sm" id="btnExportAI">导出给 AI</button>
     <button class="btn sm" id="btnOutlineOnly">仅大纲</button>
     <button class="btn sm" id="btnOpenCursor" title="用本机 Cursor 打开当前笔记${focusSec ? '并跳到「' + esc(focusSec) + '」那一行' : ''}">在 Cursor 中打开</button>
+    ${srcKey() === 'fsa' ? '<button class="btn sm" id="btnRevealNote" title="在资源管理器中选中这个 md 文件">在文件夹中显示</button>' : ''}
     <button class="btn sm" id="btnMerge">AI 回填</button>
     <button class="btn sm danger" id="btnTrash" title="内容先存进中间文件目录的回收站，再从文件夹里移除">删除</button>
     <button class="btn sm ${dirty ? 'primary' : ''}" id="btnSave" ${dirty ? '' : 'disabled'}>保存到磁盘</button>
@@ -958,6 +959,18 @@ function wire() {
 
   const boc = root.querySelector('#btnOpenCursor');
   if (boc) boc.addEventListener('click', openInCursor);
+
+  // 在资源管理器里选中当前 md：拷附件、发给同事、备份单篇都用得上
+  const brev = root.querySelector('#btnRevealNote');
+  if (brev) brev.addEventListener('click', async () => {
+    if (!current || srcKey() !== 'fsa') return;
+    try {
+      const dir = await fsa.ensureAbsPath(slot);
+      const abs = (dir + '\\' + current.path).replace(/\//g, '\\');
+      await ai.registerRoots();
+      await ai.revealInExplorer(abs);
+    } catch (e) { toast(e.message || '打开资源管理器失败', 'warn'); }
+  });
 
   root.querySelectorAll('[data-md]').forEach(b => b.addEventListener('click', () => applyMarkdown(b.dataset.md)));
 
