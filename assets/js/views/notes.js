@@ -98,8 +98,28 @@ async function saveWithBackupSafe(f, content, mod) {
   }
 }
 
-async function initSource(force = false) {
-  if (source && !force) return;
+/* 删到回收站：磁盘笔记要先有「中间文件目录」放副本，没设置就引导选一次 */
+async function trashSafe(f) {
+  try {
+    return await source.trash(f);
+  } catch (err) {
+    if (err && err.code === 'NO_RUNTIME') {
+      const ok = await confirmBox(
+        '还需要选一个「中间文件目录」',
+        '删除前要先把这篇内容放进回收站。请选择一个目录专门存放回收站 / 备份，它不会碰你的笔记源目录。',
+        '去选择'
+      );
+      if (!ok) return null;
+      try {
+        await fsa.pickDir('runtime');
+        return await source.trash(f);
+      } catch { return null; }
+    }
+    throw err;
+  }
+}
+
+async function initSource(force = false) {  if (source && !force) return;
   const ui = store.notesSlotUI(slot);
   if (ui.source === 'mem') { source = mem; return; }
   if (fsa.supported()) {
@@ -548,6 +568,7 @@ function toolbarHTML() {
     <button class="btn sm" id="btnOutlineOnly">仅大纲</button>
     <button class="btn sm" id="btnOpenCursor" title="用本机 Cursor 打开当前笔记${focusSec ? '并跳到「' + esc(focusSec) + '」那一行' : ''}">在 Cursor 中打开</button>
     <button class="btn sm" id="btnMerge">AI 回填</button>
+    <button class="btn sm danger" id="btnTrash" title="内容先存进中间文件目录的回收站，再从文件夹里移除">删除</button>
     <button class="btn sm ${dirty ? 'primary' : ''}" id="btnSave" ${dirty ? '' : 'disabled'}>保存到磁盘</button>
   `;
 }
@@ -871,6 +892,28 @@ function wire() {
 
   const saveBtn = root.querySelector('#btnSave');
   if (saveBtn) saveBtn.addEventListener('click', doSave);
+
+  // 删除：磁盘笔记先写一份到中间文件目录的回收站，再从源文件夹移除
+  const trashBtn = root.querySelector('#btnTrash');
+  if (trashBtn) trashBtn.addEventListener('click', async () => {
+    if (!current) return;
+    const target = current;
+    if (!(await confirmBox('删除笔记',
+      `把《${target.name}》移到「回收站」？\n\n内容会先复制一份到中间文件目录，再从原来的文件夹里移除，事后能找回来。`,
+      '移到回收站'))) return;
+    try {
+      const rel = await trashSafe(target);
+      if (!rel) return;                      // 用户没选目录 / 取消了
+      dirty = false;
+      draftClear(target.path);
+      if (current && current.path === target.path) { current = null; text = ''; mode = 'read'; }
+      await loadFiles();
+      render();
+      toast(srcKey() === 'fsa' ? `已移到「${rel}」` : '已从内置库删除', 'ok');
+    } catch (e) {
+      toast('删除失败：' + ((e && e.message) || e), 'warn', 5000);
+    }
+  });
   const bo = root.querySelector('#btnOutline');
   if (bo) bo.addEventListener('click', () => { outlineOnly = !outlineOnly; render(); });
   const bea = root.querySelector('#btnExportAI');
