@@ -82,6 +82,15 @@ export function build(kind = 'week') {
   const studyDays = study.reduce((a, s) => a + s.dayCount, 0);
   const studyMinutes = study.reduce((a, s) => a + s.minutes, 0);
 
+  /* 新增的任务：只认有 createdAt 的（老任务没这个字段，不硬凑） */
+  const created = [];
+  for (const p of (d.projects || [])) {
+    for (const tk of (p.tasks || [])) {
+      const c = String(tk.createdAt || '');
+      if (c && c >= from && c <= to) created.push({ task: tk, project: p });
+    }
+  }
+
   /* 随手记 */
   const jots = (d.jots || []).filter(j => {
     const ds = localDay(j.createdAt || j.at);
@@ -117,6 +126,7 @@ export function build(kind = 'week') {
   out.push(`- 统计区间：${days} 天（${from} ~ ${to}）`);
   out.push(`- 有进展的天数：${perDay.length} / ${days}`);
   out.push(`- 完成任务：${doneCount} 个`);
+  out.push(`- 新增任务：${created.length} 个`);
   out.push(`- 学习打卡：${studyDays} 天，共 ${studyMinutes} 分钟`);
   out.push(`- 新增随手记：${jots.length} 条`);
   if (hDays) out.push(`- 健康记录：${hDays} 天有记录`);
@@ -135,6 +145,16 @@ export function build(kind = 'week') {
     out.push('_这段时间没有勾选完成的任务。_');
     out.push('');
   }
+
+  out.push('## 新增的任务');
+  out.push('');
+  if (created.length) {
+    for (const x of created.slice(0, 30)) out.push(taskLine(x) + ` · 建于 ${x.task.createdAt}`);
+    if (created.length > 30) out.push(`- …还有 ${created.length - 30} 条`);
+  } else {
+    out.push('_这段时间没有新加任务。_');
+  }
+  out.push('');
 
   out.push('## 项目进度');
   out.push('');
