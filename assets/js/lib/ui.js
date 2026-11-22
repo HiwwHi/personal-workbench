@@ -28,6 +28,7 @@ export function toast(msg, type = '', ms = 2200) {
 
 export function confirmBox(title, msg, okText = '确定', danger = true) {
   return new Promise(resolve => {
+    const prevFocus = document.activeElement;
     const mask = toEl(`<div class="modal-mask"><div class="modal" style="width:420px">
       <div class="modal-head"><div class="modal-title">${esc(title)}</div></div>
       <div class="modal-body" style="font-size:13.5px;color:var(--text-2)">${esc(msg)}</div>
@@ -40,13 +41,22 @@ export function confirmBox(title, msg, okText = '确定', danger = true) {
       const a = e.target.closest('[data-a]');
       if (a) finish(a.dataset.a === 'yes');
     });
-    function finish(v) { mask.remove(); resolve(v); }
+    // Esc 取消：modal() 一直支持，确认框之前只能点按钮，手在键盘上时很别扭
+    const onKey = e => { if (e.key === 'Escape') finish(false); };
+    document.addEventListener('keydown', onKey);
+    function finish(v) {
+      document.removeEventListener('keydown', onKey);
+      mask.remove();
+      if (prevFocus && prevFocus.isConnected && prevFocus.focus) prevFocus.focus();
+      resolve(v);
+    }
     $('#modalWrap').appendChild(mask);
   });
 }
 
 /* title / 按钮文案一律当纯文本转义；body 由调用方负责（它本来就是 HTML） */
 export function modal({ title, body, okText = '确定', onOk, wide = false, cancelText = '取消', done }) {
+  const prevFocus = document.activeElement;
   const mask = toEl(`<div class="modal-mask"><div class="modal ${wide ? 'wide' : ''}">
       <div class="modal-head">
         <div class="modal-title">${esc(title)}</div>
@@ -65,6 +75,8 @@ export function modal({ title, body, okText = '确定', onOk, wide = false, canc
     closed = true;
     document.removeEventListener('keydown', onKey);
     mask.remove();
+    // 关掉后把焦点还给打开它的那个按钮，键盘用户不用再 Tab 一遍
+    if (prevFocus && prevFocus.isConnected && prevFocus.focus) prevFocus.focus();
   };
   mask.addEventListener('click', e => {
     if (e.target === mask) close();
