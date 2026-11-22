@@ -106,7 +106,7 @@ function runModal(s, done) {
                 <span>${esc(st.text)}</span>
               </div>`).join('') || '<div class="hint">还没有步骤</div>'}
           </div>
-          ${s.template ? `<div class="card-title mt16 mb8">输出模板预览</div><pre class="md-preview">${esc(fill(s.template, vals))}</pre>` : ''}
+          ${s.template ? `<div class="card-title mt16 mb8">输出模板预览</div><pre class="md-preview" id="tplPrev">${esc(fill(s.template, vals))}</pre>` : ''}
         </div>
       </div>`,
     onOk(body) {
@@ -119,9 +119,18 @@ function runModal(s, done) {
     }
   });
 
+  // 参数一改就重算模板预览：原来这份预览只在弹窗打开时算一次，填了参数也不动，等于摆设
+  const tplPrev = m.body.querySelector('#tplPrev');
+  const refreshPrev = () => {
+    if (!tplPrev) return;
+    const cur = {};
+    m.body.querySelectorAll('[data-in]').forEach(i => { cur[i.dataset.in] = i.value; });
+    tplPrev.textContent = fill(s.template || '', cur);
+  };
+  m.body.querySelectorAll('[data-in]').forEach(i => i.addEventListener('input', refreshPrev));
+
   // 弹窗里的步骤勾选框：卡片那套事件委托挂在视图 root 上，管不到弹窗里的 DOM
-  m.body.addEventListener('click', e => {
-    const c = e.target.closest('[data-step]');
+  m.body.addEventListener('click', e => {    const c = e.target.closest('[data-step]');
     if (!c) return;
     let next = false;
     store.update(d => {
