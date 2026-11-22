@@ -919,8 +919,8 @@ function wire() {
     e.stopPropagation();
     const i = Number(b.dataset.chap);
     const sec = sections()[i];
+    // 导出不算「常看」：这里原来也 bumpRecent，导几章就把首页「最近常看的笔记」刷成它了
     exportChapter(sec);
-    bumpRecent(current.path, sec.title);
   }));
   root.querySelectorAll('[data-rec]').forEach(b => b.addEventListener('click', e => {
     e.stopPropagation();
