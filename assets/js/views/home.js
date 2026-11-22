@@ -90,6 +90,30 @@ export function mount(root) {
     })()}
     </div>`);
 
+  if (st.homeStudy) {
+    const plans = store.load().study || [];
+    const checked = plans.filter(s => (s.checkins || {})[t]);
+    cards.push(`
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">今日学习</div>
+          <a class="btn sm" href="#/study">去打卡</a>
+        </div>
+        ${plans.length ? `
+          <div class="hint mb8">已打卡 <b>${checked.length}</b>/${plans.length} 项</div>
+          ${plans.map(s => {
+      const ck = (s.checkins || {})[t];
+      return `<div class="list-item" style="padding-left:2px">
+              <span class="tag ${ck ? 'green' : ''}">${ck ? '已打卡' : '待打卡'}</span>
+              <div class="grow">
+                <div class="${ck ? 'done-text' : ''}">${esc(s.name)}</div>
+                <div class="hint">${ck ? (Number(ck.minutes) || 0) + ' 分钟' : (s.goalMin ? '目标 ' + s.goalMin + ' 分钟' : '还没打卡')}</div>
+              </div>
+            </div>`;
+    }).join('')}` : '<div class="empty">还没有学习计划，去「学习计划」建一个</div>'}
+      </div>`);
+  }
+
   if (st.homeNotes) {
     const rs = recentNotes();
     cards.push(`

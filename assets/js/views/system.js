@@ -378,6 +378,9 @@ export async function mount(root) {
         <label class="switch mb8"><input type="checkbox" id="swNotes" ${st.homeNotes ? 'checked' : ''}>
           首页显示最近常看的笔记</label>
         <div class="hint mb12">关闭后首页只剩待办和排期，最干净。</div>
+        <label class="switch mb8"><input type="checkbox" id="swStudy" ${st.homeStudy === false ? '' : 'checked'}>
+          首页显示今日学习打卡</label>
+        <div class="hint mb12">只显示「已打卡 / 待打卡」和当天分钟数，不显示目标细节。</div>
         <label class="switch"><input type="checkbox" id="swPrivacy" ${st.privacy ? 'checked' : ''}>
           隐私模式（隐藏密码 / 健康 / 随手记入口）</label>
         <div class="hint mt6">打开后左侧导航里的敏感模块会整块隐藏，健康提醒也会停。</div>
@@ -672,6 +675,7 @@ function wire(root) {
   };
   bind('#swHealth', 'homeHealth');
   bind('#swNotes', 'homeNotes');
+  bind('#swStudy', 'homeStudy');
   bind('#swPrivacy', 'privacy');
 
   root.querySelectorAll('[data-srcdir]').forEach(el => el.addEventListener('click', async () => {
