@@ -36,6 +36,7 @@
   --r-md: 10px;
   --r-sm: 8px;
   --sidebar-w: 216px;
+  color-scheme: light;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -596,6 +597,10 @@ svg.mini { width: 15px; height: 15px; }
   --on-accent: #10201E;
   --on-green: #10201A;
 }
+
+/* 夜间主题让原生控件（日期面板、下拉列表、复选框）也跟着变深，
+   否则深色页面上点开日期选择器会跳出一块刺眼的白 */
+[data-theme="yehang"], [data-theme="moye"], [data-theme="shentan"] { color-scheme: dark; }
 
 /* ---------- 主题选择卡 ---------- */
 .theme-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
