@@ -165,7 +165,7 @@ export function mount(root) {
             <button class="btn-ghost sm" data-act="copy">复制</button>
             <button class="btn-ghost sm" data-act="task" title="复制成一条任务，放到「收件箱」项目里">转任务</button>
             <button class="btn-ghost sm" data-act="edit">编辑</button>
-            <button class="btn-ghost sm" data-act="pin">${j.pinned ? '取消置顶' : '置顶'}</button>
+            ${j.archived ? '' : `<button class="btn-ghost sm" data-act="pin">${j.pinned ? '取消置顶' : '置顶'}</button>`}
             <button class="btn-ghost sm" data-act="arc">${j.archived ? '恢复' : '归档'}</button>
             <button class="btn-ghost sm" data-act="del">删除</button>
           </div>
@@ -215,6 +215,7 @@ export function mount(root) {
         case 'edit':
           editJot(j, root); break;
         case 'pin':
+          if (j.archived) break;      // 归档里没有置顶这回事
           store.update(d => { d.jots.find(x => x.id === j.id).pinned = !j.pinned; });
           mount(root); break;
         case 'arc': {
@@ -222,7 +223,9 @@ export function mount(root) {
           const next = !j.archived;
           store.update(d => {
             const x = d.jots.find(y => y.id === j.id);
-            if (x) x.archived = next;
+            if (!x) return;
+            x.archived = next;
+            if (next) x.pinned = false;      // 归档就取消置顶，恢复时是普通记录
           });
           toast(next ? '已归档' : '已恢复');
           mount(root);
