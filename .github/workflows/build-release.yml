@@ -45,12 +45,19 @@ jobs:
           path: release/*.exe
           retention-days: 7
 
+      # 把 CHANGELOG 里这一版的段落取出来当 Release 正文：
+      # 提交是直推 main 的，generate_release_notes 按 PR 标签分类会生成一片空白
+      - name: Release body from CHANGELOG
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: node scripts/changelog-section.js "${{ github.ref_name }}" > RELEASE_BODY.md
+
       # 推 tag 时把安装包挂到 Release
       - name: Attach installers to Release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
           files: release/*.exe
-          generate_release_notes: true
+          body_path: RELEASE_BODY.md
+          generate_release_notes: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
