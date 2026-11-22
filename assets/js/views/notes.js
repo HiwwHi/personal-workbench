@@ -606,8 +606,12 @@ function render() {
   // 当前打开的排最前，其次上次看过的，其余按「最近修改」倒序（还没读到时间的按名称）
   const uiNow = store.notesSlotUI(slot);
   const rank = p => (current && p === current.path ? 0 : p === uiNow.last ? 1 : 2);
-  const visibleFiles = (query
-    ? files.filter(f => f.path.toLowerCase().includes(query.toLowerCase()))
+  const ql = String(query || '').toLowerCase();
+  const bodyCache = uiNow.textCache || {};
+  const visibleFiles = (ql
+    ? files.filter(f => f.path.toLowerCase().includes(ql)
+      // 正文缓存只在打开过的笔记里有，搜不到的就当没命中，别假装搜了整库
+      || String((bodyCache[f.path] && bodyCache[f.path].t) || '').toLowerCase().includes(ql))
     : files.slice())
     .sort((a, b) => {
       const ra = rank(a.path), rb = rank(b.path);
@@ -629,7 +633,7 @@ function render() {
             <span class="tag ${srcKey() === 'fsa' ? 'green' : 'blue'}">${srcKey() === 'fsa' ? '本地文件夹' : srcKey() === 'mem' ? '内置笔记库' : '未连接'}</span>
             <button class="btn sm" id="btnPick">${srcKey() === 'fsa' ? '更换' : '连接'}</button>
           </div>
-          <input type="text" id="nq" placeholder="搜索文件名" value="${esc(query)}">
+          <input type="text" id="nq" placeholder="搜文件名，也能搜打开过的正文" value="${esc(query)}">
           <div class="row mt6">
             <button class="btn sm" id="btnNew">+ 新建笔记</button>
             <button class="btn sm" id="btnRefresh">刷新</button>
