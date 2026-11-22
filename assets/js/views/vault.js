@@ -47,11 +47,13 @@ function analyze(list) {
   let weak = 0, dup = 0, old = 0;
   for (const v of list) {
     const arr = [];
+    const hasPwd = String(v.password || '').length > 0;
     const w = weakReason(v.password);
     if (w) { arr.push({ text: '弱·' + w, cls: 'red' }); weak++; }
     if (dupIds.has(v.id)) { arr.push({ text: '重复使用', cls: 'red' }); dup++; }
+    // 没填密码的条目不该催「多少天没换」——它压根没密码
     const age = pwdAge(v);
-    if (age !== null && age > OLD_DAYS) { arr.push({ text: age + ' 天未换', cls: 'amber' }); old++; }
+    if (hasPwd && age !== null && age > OLD_DAYS) { arr.push({ text: age + ' 天未换', cls: 'amber' }); old++; }
     if (arr.length) issues.set(v.id, arr);
   }
   return { issues, weak, dup, old };
@@ -181,7 +183,7 @@ function cardHTML(v, reveal, issues) {
     </div>` : ''}
     ${v.note ? `<div class="hint" style="white-space:pre-wrap">${esc(v.note)}</div>` : ''}
     <div class="vault-foot">
-      <span class="hint">${age === null ? '未记录改密时间' : age > 180 ? `<span style="color:var(--amber)">已 ${age} 天未改</span>` : `改密于 ${age} 天前`}</span>
+      <span class="hint">${!v.password ? '还没填密码，只记了账号' : age === null ? '未记录改密时间' : age > 180 ? `<span style="color:var(--amber)">已 ${age} 天未改</span>` : `改密于 ${age} 天前`}</span>
       <span class="row">
         <button class="icon-btn" data-act="edit"><svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg></button>
         <button class="icon-btn danger" data-act="del"><svg viewBox="0 0 24 24"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg></button>
