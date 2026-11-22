@@ -385,8 +385,32 @@ async function exportChapter(sec) {
   });
 }
 
-function exportToAI(scope) {
+/* 导出整篇：和磁盘上的 md 一致，落到「中间文件目录/导出/」，没目录就下载 */
+async function exportWhole() {
   if (!current) return;
+  const name = current.name.replace(/\.md$/i, '') + '.md';
+  const body = text;
+  const hasRt = await fsa.runtimeReady();
+  modal({
+    title: '导出整篇 · ' + current.name, wide: true,
+    okText: hasRt ? '保存到中间文件目录' : '下载 md 文件',
+    body: `<div class="hint mb8">文件名：<code>${esc(name)}</code> · ${body.split('\n').length} 行${dirty ? ' · <b style="color:var(--amber)">注意：导出的是编辑器里改过、还没保存的版本</b>' : ''}</div>
+      <div class="hint mb12">${hasRt ? '会存到「中间文件目录/导出/」，原笔记不受影响。' : '还没设置中间文件目录，将直接下载。'}</div>
+      <pre class="md-preview" style="max-height:46vh;overflow:auto">${esc(body)}</pre>`,
+    onOk: async () => {
+      try {
+        const rel = await fsa.writeRuntime('导出', name, body);
+        toast('已保存到 中间文件目录/' + rel, 'ok');
+      } catch (e) {
+        download(name, body, 'text/markdown;charset=utf-8');
+        toast('中间文件目录不可用，已改为下载', 'warn');
+      }
+      return true;
+    }
+  });
+}
+
+function exportToAI(scope) {  if (!current) return;
   let payload = '';
   const name = current.name.replace(/\.md$/i, '');
   if (scope === 'outline') {
@@ -563,7 +587,8 @@ function toolbarHTML() {
       : '只读 · 任何修改都不会自动写入磁盘'}</span>
     <span class="hint" id="noteStat" title="按非空白字符数算，约 300 字 / 分钟">${statLine(text)}</span>
     <span class="grow"></span>
-    <button class="btn sm" id="btnOutline" title="显示/隐藏大纲">大纲</button>
+    <button class="btn sm" id="btnOutline">大纲</button>
+    <button class="btn sm" id="btnExportNote" title="把整篇导出成 md">导出整篇</button>
     <button class="btn sm" id="btnExportAI">导出给 AI</button>
     <button class="btn sm" id="btnOutlineOnly">仅大纲</button>
     <button class="btn sm" id="btnOpenCursor" title="用本机 Cursor 打开当前笔记${focusSec ? '并跳到「' + esc(focusSec) + '」那一行' : ''}">在 Cursor 中打开</button>
@@ -922,6 +947,8 @@ function wire() {
   if (bo) bo.addEventListener('click', () => { outlineOnly = !outlineOnly; render(); });
   const bea = root.querySelector('#btnExportAI');
   if (bea) bea.addEventListener('click', () => exportToAI('full'));
+  const ben = root.querySelector('#btnExportNote');
+  if (ben) ben.addEventListener('click', exportWhole);
   const boo = root.querySelector('#btnOutlineOnly');
   if (boo) boo.addEventListener('click', () => exportToAI('outline'));
   const bm = root.querySelector('#btnMerge');
