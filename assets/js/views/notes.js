@@ -254,8 +254,18 @@ async function loadFiles() {
 }
 
 async function openFile(f, section) {
-  const res = await source.read(f);
-  if (dirty && !(await confirmBox('有未保存的修改', '当前笔记还没保存到磁盘，切换会丢失。确定离开吗？', '放弃修改'))) return;
+  if (!f) return false;
+  // 先问要不要放弃未保存的改动，再去读盘：原来顺序反了，用户点了「留下」也已经白读一遍
+  if (dirty && !(await confirmBox('有未保存的修改', '当前笔记还没保存到磁盘，切换会丢失。确定离开吗？', '放弃修改'))) return false;
+
+  let res;
+  try {
+    res = await source.read(f);
+  } catch (err) {
+    // 文件夹权限失效、文件被别的程序删掉都会走到这里：说清楚，别让整个页面崩成「出了点问题」
+    toast('打开失败：' + ((err && err.message) || '文件读不出来') + '。可能是文件夹权限失效，去「系统设置」重新连接一次', 'warn', 5000);
+    return false;
+  }
   if (dirty) draftClear(current && current.path);      // 用户明确放弃，别留着下次又弹
 
   // 有本地草稿就问一句：恢复（不写盘）还是丢掉
@@ -279,6 +289,7 @@ async function openFile(f, section) {
   cacheBody(f.path, text);          // 顺手把正文存进搜索缓存（不读盘也能搜正文）
   render();
   if (section) scrollToHeading(section);
+  return true;
 }
 
 function scrollToHeading(title) {
