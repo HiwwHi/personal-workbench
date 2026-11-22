@@ -94,15 +94,24 @@ export function mount(root) {
 
   root.querySelectorAll('[data-add]').forEach(b => b.addEventListener('click', () => { H.bump(b.dataset.add); mount(root); }));
   root.querySelectorAll('[data-toggle]').forEach(c => c.addEventListener('change', () => {
-    store.update(st => { st.health.rules.find(r => r.id === c.dataset.toggle).enabled = c.checked; });
+    let found = false;
+    store.update(st => {
+      const r = st.health.rules.find(x => x.id === c.dataset.toggle);
+      if (r) { r.enabled = c.checked; found = true; }
+    });
+    if (!found) { toast('这条规则已经不存在，刷新一下', 'warn'); }
     mount(root);
   }));
   root.querySelectorAll('[data-test]').forEach(b => b.addEventListener('click', () => {
-    H.previewNotice(store.load().health.rules.find(r => r.id === b.dataset.test));
+    const r = store.load().health.rules.find(x => x.id === b.dataset.test);
+    // 规则在别的标签页删掉了：直接传 undefined 进去会在 fire() 里读 r.id 崩掉
+    if (!r) { toast('这条规则已经不存在，刷新一下', 'warn'); mount(root); return; }
+    H.previewNotice(r);
   }));
   root.querySelectorAll('[data-reset]').forEach(b => b.addEventListener('click', () => { H.resetTimer(b.dataset.reset); toast('已重新开始计时'); mount(root); }));
   root.querySelectorAll('[data-redit]').forEach(b => b.addEventListener('click', () => {
     const r = store.load().health.rules.find(x => x.id === b.dataset.redit);
+    if (!r) { toast('这条规则已经不存在，刷新一下', 'warn'); mount(root); return; }
     modal({
       title: '编辑规则', body: ruleForm(r), okText: '保存',
       done: () => mount(root),
