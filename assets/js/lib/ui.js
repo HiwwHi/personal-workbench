@@ -17,6 +17,7 @@ export function toast(msg, type = '', ms = 2200) {
   const w = $('#toastWrap');
   const d = document.createElement('div');
   d.className = 'toast ' + type;
+  d.setAttribute('role', 'status');    // 读屏软件会念出来，不用靠看
   d.textContent = msg;
   w.appendChild(d);
   requestAnimationFrame(() => d.classList.add('show'));
@@ -29,7 +30,7 @@ export function toast(msg, type = '', ms = 2200) {
 export function confirmBox(title, msg, okText = '确定', danger = true) {
   return new Promise(resolve => {
     const prevFocus = document.activeElement;
-    const mask = toEl(`<div class="modal-mask"><div class="modal" style="width:420px">
+    const mask = toEl(`<div class="modal-mask"><div class="modal" style="width:420px" role="dialog" aria-modal="true" aria-label="${esc(title)}">
       <div class="modal-head"><div class="modal-title">${esc(title)}</div></div>
       <div class="modal-body" style="font-size:13.5px;color:var(--text-2)">${esc(msg)}</div>
       <div class="modal-foot">
@@ -57,7 +58,7 @@ export function confirmBox(title, msg, okText = '确定', danger = true) {
 /* title / 按钮文案一律当纯文本转义；body 由调用方负责（它本来就是 HTML） */
 export function modal({ title, body, okText = '确定', onOk, wide = false, cancelText = '取消', done }) {
   const prevFocus = document.activeElement;
-  const mask = toEl(`<div class="modal-mask"><div class="modal ${wide ? 'wide' : ''}">
+  const mask = toEl(`<div class="modal-mask"><div class="modal ${wide ? 'wide' : ''}" role="dialog" aria-modal="true" aria-label="${esc(title)}">
       <div class="modal-head">
         <div class="modal-title">${esc(title)}</div>
         <button class="icon-btn" data-a="x"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
