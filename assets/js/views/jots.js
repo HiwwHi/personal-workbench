@@ -11,16 +11,23 @@ let tagFilter = '';
 
 function jots() { return store.load().jots; }
 
+/* 标签边界：遇到空白或中英文标点就断开。
+   原来只按空白切，`#弱电，记得带工具` 会整个变成一条标签 */
+const TAG_BODY = '[^\\s#，。、；：！？,.;:!?（）()\\[\\]【】「」『』]{1,12}';
+const TAG_PARSE_RE = new RegExp('#' + TAG_BODY, 'g');
+const TAG_SPLIT_RE = new RegExp('(#' + TAG_BODY + ')', 'g');
+const TAG_ONLY_RE = new RegExp('^#' + TAG_BODY + '$');
+
 function parseTags(text) {
-  return (text.match(/#([^\s#]{1,12})/g) || []).map(t => t.slice(1));
+  return (String(text || '').match(TAG_PARSE_RE) || []).map(t => t.slice(1));
 }
 
 /* 高亮 #标签：先在原文上切分，再逐段转义。
    反过来（先 esc 再替换）会把 &#39; 里的 #39; 当成标签，正文里的单引号就变样了 */
 function highlightTags(text) {
   return String(text == null ? '' : text)
-    .split(/(#[^\s#]{1,12})/g)
-    .map(part => (/^#[^\s#]{1,12}$/.test(part)
+    .split(TAG_SPLIT_RE)
+    .map(part => (TAG_ONLY_RE.test(part)
       ? `<span class="tag blue">${esc(part)}</span>`
       : esc(part)))
     .join('');
@@ -37,7 +44,7 @@ function add(text) {
 
 /* 把一条随手记变成任务：选项目（默认收件箱），原记录归档留底 */
 function toTask(j, root) {
-  const title = String(j.text || '').replace(/#[^\s#]{1,12}/g, '').trim().slice(0, 60) || '未命名任务';
+  const title = String(j.text || '').replace(TAG_PARSE_RE, '').trim().slice(0, 60) || '未命名任务';
   const prjs = (store.load().projects || []).slice();
   const inbox = prjs.find(p => p.name === INBOX);
   modal({
