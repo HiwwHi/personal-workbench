@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Tray, Menu, nativeImage, shell, dialog, ipcMain } = require('electron');
+const { app, BrowserWindow, Tray, Menu, nativeImage, shell, dialog, ipcMain, screen } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { startServer } = require('../server.js');
@@ -93,17 +93,29 @@ function saveWinState() {
   } catch { /* 记不住也不影响使用 */ }
 }
 
+/* 上次的位置可能已经不在了（拔掉副屏、改了缩放、分辨率变了）：
+   要求标题栏附近还有一块落在某个显示器里，否则交给系统重新摆 */
+function visibleOnSomeDisplay(b) {
+  if (typeof b.x !== 'number' || typeof b.y !== 'number') return false;
+  try {
+    return screen.getAllDisplays().some(({ workArea: a }) =>
+      b.x + b.width - 80 > a.x && b.x + 80 < a.x + a.width &&
+      b.y + 30 > a.y && b.y + 30 < a.y + a.height);
+  } catch { return false; }
+}
+
 function createWindow() {
   stateFile = path.join(app.getPath('userData'), 'window-state.json');
   const saved = loadWinState();
   // 只有尺寸合理才采用，防止上次是在小屏/异屏留下的怪值
   const useSaved = saved && saved.width >= 960 && saved.height >= 600;
+  const usePos = useSaved && visibleOnSomeDisplay(saved);
 
   win = new BrowserWindow({
     width: useSaved ? saved.width : 1280,
     height: useSaved ? saved.height : 820,
-    x: useSaved ? saved.x : undefined,
-    y: useSaved ? saved.y : undefined,
+    x: usePos ? saved.x : undefined,
+    y: usePos ? saved.y : undefined,
     minWidth: 960,
     minHeight: 600,
     icon: path.join(ROOT, 'app.ico'),
