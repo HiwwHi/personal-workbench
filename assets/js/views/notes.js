@@ -1012,7 +1012,8 @@ export async function mount() {
     if (pf) { await openFile(pf, pending.section); return; }
   }
   const last = store.notesSlotUI(slot).last;
-  const f = files.find(x => x.path === last);
+  // 上次那篇被改名/删掉了，或者第一次进来：直接打开第一篇，别让人对着空编辑器猜下一步
+  const f = files.find(x => x.path === last) || files[0];
   if (f) await openFile(f);
   else render();
 }
