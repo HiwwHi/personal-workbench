@@ -86,6 +86,26 @@ function toTask(j, root) {
   });
 }
 
+/* 编辑已有记录：改完重新解析 #标签，原文不保留历史 */
+function editJot(j, root) {
+  modal({
+    title: '编辑随手记', wide: true, okText: '保存',
+    body: `<label class="field"><span>内容（#标签 会重新解析）</span>
+        <textarea rows="6" data-f="text">${esc(j.text)}</textarea></label>`,
+    onOk(body) {
+      const t = body.querySelector('[data-f="text"]').value.trim();
+      if (!t) { toast('内容不能为空', 'warn'); return false; }
+      store.update(d => {
+        const x = d.jots.find(y => y.id === j.id);
+        if (x) { x.text = t; x.tags = parseTags(t); x.editedAt = new Date().toISOString(); }
+      });
+      toast('已保存', 'ok');
+      mount(root);
+      return true;
+    }
+  });
+}
+
 function timeAgo(iso) {
   const diff = Date.now() - new Date(iso).getTime();
   const m = Math.floor(diff / 60000);
@@ -144,6 +164,7 @@ export function mount(root) {
             <span>${timeAgo(j.createdAt)}</span>
             <button class="btn-ghost sm" data-act="copy">复制</button>
             <button class="btn-ghost sm" data-act="task" title="复制成一条任务，放到「收件箱」项目里">转任务</button>
+            <button class="btn-ghost sm" data-act="edit">编辑</button>
             <button class="btn-ghost sm" data-act="pin">${j.pinned ? '取消置顶' : '置顶'}</button>
             <button class="btn-ghost sm" data-act="arc">${j.archived ? '恢复' : '归档'}</button>
             <button class="btn-ghost sm" data-act="del">删除</button>
@@ -191,6 +212,8 @@ export function mount(root) {
         }
         case 'task':
           toTask(j, root); break;
+        case 'edit':
+          editJot(j, root); break;
         case 'pin':
           store.update(d => { d.jots.find(x => x.id === j.id).pinned = !j.pinned; });
           mount(root); break;
