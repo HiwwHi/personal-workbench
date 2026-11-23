@@ -7,7 +7,7 @@ import { toast } from './ui.js';
 export const SUB = '备份/json';
 export const KEEP = 10;
 const MIN_GAP = 10 * 60 * 1000;      // 两次自动备份的最小间隔
-const PREFIX = '工作台自动备份-';
+export const PREFIX = '工作台自动备份-';   // 备份恢复列表也按这个前缀过滤
 
 let timer = null;
 

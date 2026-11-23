@@ -838,7 +838,10 @@ function wire(root) {
     if (!(await fsa.runtimeReady())) { toast('还没设置「中间文件目录」，自动备份需要一个落脚点', 'warn'); return; }
     let files = [];
     try {
-      files = (await fsa.listRuntime(autobackup.SUB)).filter(n => /\.json$/i.test(n)).sort().reverse();
+      // 只列自己生成的自动备份：同目录下别人的 json 不该出现在「恢复这份」里
+    files = (await fsa.listRuntime(autobackup.SUB))
+      .filter(n => n.startsWith(autobackup.PREFIX) && /\.json$/i.test(n))
+      .sort().reverse();
     } catch (e) {
       toast('读不到备份目录，先设置「中间文件目录」', 'warn');
       return;
