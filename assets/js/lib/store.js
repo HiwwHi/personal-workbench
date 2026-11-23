@@ -107,6 +107,8 @@ export function importAll(json) {
   const obj = JSON.parse(json);
   const data = obj && obj.data ? obj.data : obj;
   if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error('不是工作台的备份文件');
+  // 至少得认出一个工作台字段：否则随便一个 json 恢复后会把整个库清成默认值
+  if (!Object.keys(DEFAULT).some(k => k in data)) throw new Error('不是工作台的备份文件（没有可识别的数据字段）');
   const safe = {};
   for (const k of Object.keys(DEFAULT)) {
     if (!(k in data)) continue;
@@ -120,7 +122,10 @@ export function importAll(json) {
     }
   }
   cache = deepMerge(DEFAULT, safe);
-  save();
+  if (!save()) {
+    cache = null;         // 没写进去就别留在内存里假装成功
+    throw new Error('本地存储写满，恢复没有生效');
+  }
   return true;
 }
 
