@@ -43,7 +43,7 @@ export function confirmBox(title, msg, okText = '确定', danger = true) {
       if (a) finish(a.dataset.a === 'yes');
     });
     // Esc 取消：modal() 一直支持，确认框之前只能点按钮，手在键盘上时很别扭
-    const onKey = e => { if (e.key === 'Escape') finish(false); };
+    const onKey = e => { if (e.key === 'Escape' && topMask() === mask) finish(false); };
     document.addEventListener('keydown', onKey);
     function finish(v) {
       document.removeEventListener('keydown', onKey);
@@ -54,6 +54,12 @@ export function confirmBox(title, msg, okText = '确定', danger = true) {
     $('#modalWrap').appendChild(mask);
   });
 }
+
+/* 弹窗会叠层：Esc 只关最上面那个，否则一次 Esc 把列表和确认框一起关掉 */
+const topMask = () => {
+  const all = document.querySelectorAll('#modalWrap .modal-mask');
+  return all.length ? all[all.length - 1] : null;
+};
 
 /* title / 按钮文案一律当纯文本转义；body 由调用方负责（它本来就是 HTML） */
 export function modal({ title, body, okText = '确定', onOk, wide = false, cancelText = '取消', done }) {
@@ -90,7 +96,7 @@ export function modal({ title, body, okText = '确定', onOk, wide = false, canc
       if (done) done();
     }
   });
-  const onKey = e => { if (e.key === 'Escape') close(); };
+  const onKey = e => { if (e.key === 'Escape' && topMask() === mask) close(); };
   document.addEventListener('keydown', onKey);
   $('#modalWrap').appendChild(mask);
   const firstInput = mask.querySelector('input,textarea,select');

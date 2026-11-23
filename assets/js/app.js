@@ -266,6 +266,8 @@ function boot() {
   // ? 打开快捷键帮助：正在输入框里打字、或搜索面板开着时不抢
   document.addEventListener('keydown', e => {
     if (e.key !== '?' || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.repeat) return;                                             // 按住 ? 不要叠出十几层弹窗
+    if (document.querySelector('#modalWrap .modal-mask')) return;      // 已经有弹窗时不再叠
     const el = document.activeElement;
     if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) return;
     const pal = document.querySelector('#palette');
